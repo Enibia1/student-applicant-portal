@@ -1,1 +1,68 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Registration Portal</title>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.0"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; background: #f4f5f7; margin: 0; }
+        form { max-width: 450px; margin: 30px auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h2 { margin-top: 0; color: #1e293b; text-align: center; }
+        .field { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 6px; font-weight: 600; color: #475569; font-size: 14px; }
+        input, select { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 16px; }
+        input:focus, select:focus { outline: none; border-color: #0070f3; }
+        button { background: #0070f3; color: white; padding: 12px; border: none; border-radius: 6px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; margin-top: 10px; }
+        button:hover { background: #0051a8; }
+        #msg { text-align: center; margin-top: 15px; font-weight: 600; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <form id="applicantForm">
+        <h2>Student Registration</h2>
+        
+        <div class="field">
+            <label>Student ID</label>
+            <input type="text" id="studentId" required placeholder="e.g., STU-10029">
+        </div>
+        
+        <div class="field">
+            <label>Full Name</label>
+            <input type="text" id="fullName" required placeholder="John Doe">
+        </div>
+        
+        <div class="field">
+            <label>National Identity Number (NIN)</label>
+            <input type="text" id="nin" required placeholder="Enter NIN">
+        </div>
+        
+        <div class="field">
+            <label>Mobile Number</label>
+            <input type="text" id="mobileNumber" required placeholder="e.g., +234...">
+        </div>
+        
+        <div class="field">
+            <label>Hub Location</label>
+            <select id="hubLocation" required>
+                <option value="">Select a Hub</option>
+                <option value="Lagos">Lagos Hub</option>
+                <option value="Kano">Kano Hub</option>
+                <option value="Owerri">Owerri Hub</option>
+            </select>
+        </div>
+        
+        <div class="field" style="display: flex; align-items: flex-start; gap: 10px;">
+            <input type="checkbox" id="kywConsent" style="width: auto; margin-top: 4px;">
+            <label for="kywConsent" style="margin: 0; font-weight: normal;">I sign and agree to the KYW Consent terms</label>
+        </div>
+
+        <button type="submit">Submit Profile</button>
+        <div id="msg"></div>
+    </form>
+
+    <script src="app.js"></script>
+</body>
+</html>
