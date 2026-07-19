@@ -48,6 +48,8 @@ document.getElementById('applicantForm').addEventListener('submit', async (e) =>
             false
         );
 
+        console.log("Appwrite response:", response);
+
         let result = {};
 
         if (response.responseBody) {
@@ -64,10 +66,12 @@ document.getElementById('applicantForm').addEventListener('submit', async (e) =>
             document.getElementById('applicantForm').reset();
         } else {
             msgDiv.style.color = "#ef4444";
+
             msgDiv.innerText =
                 result.error ||
                 result.message ||
-                "Submission failed.";
+                result.errors?.join(" | ") ||
+                `Submission failed. Status: ${response.statusCode}`;
         }
 
     } catch (error) {
