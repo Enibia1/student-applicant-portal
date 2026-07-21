@@ -1,7 +1,7 @@
 const client = new Appwrite.Client();
 
 client
-    .setEndpoint('https://cloud.appwrite.io/v1')
+    .setEndpoint('https://sfo.cloud.appwrite.io/v1')
     .setProject('6a5bc178003a2529271e');
 
 const functions = new Appwrite.Functions(client);
@@ -50,14 +50,10 @@ document.getElementById('applicantForm').addEventListener('submit', async (e) =>
 
         console.log("Appwrite response:", response);
 
-        if (response.statusCode >= 200 && response.statusCode < 300) {
-            msgDiv.style.color = "#10b981";
-            msgDiv.innerText = "Application submitted successfully!";
-            document.getElementById('applicantForm').reset();
-        } else {
-            msgDiv.style.color = "#ef4444";
-            msgDiv.innerText = "Application failed. Status: " + response.statusCode;
-        }
+        msgDiv.style.color = "#10b981";
+        msgDiv.innerText = "Application submitted successfully!";
+
+        document.getElementById('applicantForm').reset();
 
     } catch (error) {
         console.error("Appwrite error:", error);
