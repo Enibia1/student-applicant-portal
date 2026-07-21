@@ -45,10 +45,18 @@ document.getElementById('applicantForm').addEventListener('submit', async (e) =>
         const response = await functions.createExecution(
             '6a5be27a00193cc88c24',
             JSON.stringify(payload),
-            false
+            false,
+            '/',
+            'POST',
+            {
+                'Content-Type': 'application/json'
+            }
         );
 
         console.log("Appwrite response:", response);
+
+        // Appwrite execution response
+        const statusCode = response.responseStatusCode;
 
         let result = {};
 
@@ -60,23 +68,25 @@ document.getElementById('applicantForm').addEventListener('submit', async (e) =>
             }
         }
 
-        if (response.statusCode >= 200 && response.statusCode < 300) {
+        if (statusCode >= 200 && statusCode < 300) {
             msgDiv.style.color = "#10b981";
             msgDiv.innerText =
                 result.message || "Application submitted successfully!";
 
             document.getElementById('applicantForm').reset();
+
         } else {
             msgDiv.style.color = "#ef4444";
             msgDiv.innerText =
                 result.error ||
-                `Application failed. Status: ${response.statusCode}`;
+                `Application failed. Status: ${statusCode || "Unknown"}`;
         }
 
     } catch (error) {
         console.error("Appwrite error:", error);
 
         msgDiv.style.color = "#ef4444";
-        msgDiv.innerText = "Error: " + error.message;
+        msgDiv.innerText =
+            "Application failed: " + error.message;
     }
 });
