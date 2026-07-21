@@ -1,14 +1,12 @@
 import json
 import os
-
-from appwrite.client import Client
-from appwrite.services.tables_db import TablesDB
-from appwrite.id import ID
+import urllib.request
+import urllib.error
 
 
 def main(context):
     try:
-        # Read the data sent from the frontend
+        # Read request body
         body = context.req.body
 
         if isinstance(body, str):
@@ -26,10 +24,10 @@ def main(context):
             "KYW_Consent_Signed"
         ]
 
-        # Check for missing fields
+        # Check missing fields
         missing_fields = [
             field for field in required_fields
-            if field not in data
+            if field not in data or data[field] in ["", None]
         ]
 
         if missing_fields:
@@ -46,44 +44,66 @@ def main(context):
                 "error": "KYW Consent must be accepted"
             }, 400)
 
-        # Initialize Appwrite
-        client = Client()
+        # Appwrite configuration
+        endpoint = "https://sfo.cloud.appwrite.io/v1"
+        project_id = os.environ["APPWRITE_FUNCTION_PROJECT_ID"]
+        api_key = os.environ["APPWRITE_FUNCTION_API_KEY"]
 
-        client.set_endpoint(
-            "https://sfo.cloud.appwrite.io/v1"
+        database_id = "6a5bdf2e0014484b10c9"
+        table_id = "students"
+
+        # Data to save
+        row_data = {
+            "studentID": data["StudentID"],
+            "fullName": data["FullName"],
+            "nationalIdentityNumber": data["NationalIdentityNumber"],
+            "mobileNumber": data["MobileNumber"],
+            "hubLocation": data["HubLocation"],
+            "kycConsentSigned": data["KYW_Consent_Signed"]
+        }
+
+        # Appwrite TablesDB REST API
+        url = (
+            f"{endpoint}/tablesdb/"
+            f"{database_id}/tables/{table_id}/rows"
         )
 
-        client.set_project(
-            os.environ["APPWRITE_FUNCTION_PROJECT_ID"]
+        payload = {
+            "rowId": "unique()",
+            "data": row_data
+        }
+
+        request = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "X-Appwrite-Project": project_id,
+                "X-Appwrite-Key": api_key
+            },
+            method="POST"
         )
 
-        client.set_key(
-            os.environ["APPWRITE_FUNCTION_API_KEY"]
-        )
+        with urllib.request.urlopen(request) as response:
+            result = json.loads(response.read().decode("utf-8"))
 
-        tables_db = TablesDB(client)
-
-        # Create a new student row
-        result = tables_db.create_row(
-            database_id="6a5bdf2e0014484b10c9",
-            table_id="students",
-            row_id=ID.unique(),
-            data={
-                "studentID": data["StudentID"],
-                "fullName": data["FullName"],
-                "nationalIdentityNumber": data["NationalIdentityNumber"],
-                "mobileNumber": data["MobileNumber"],
-                "hubLocation": data["HubLocation"],
-                "kycConsentSigned": data["KYW_Consent_Signed"]
-            }
-        )
-
-        # Success
         return context.res.json({
             "success": True,
             "message": "Student application submitted successfully.",
-            "rowId": result["$id"]
+            "rowId": result.get("$id")
         }, 201)
+
+    except urllib.error.HTTPError as error:
+        error_body = error.read().decode("utf-8")
+
+        context.error(
+            f"Appwrite API Error {error.code}: {error_body}"
+        )
+
+        return context.res.json({
+            "success": False,
+            "error": error_body
+        }, error.code)
 
     except Exception as error:
         context.error(str(error))
