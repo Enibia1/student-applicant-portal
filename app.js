@@ -1,7 +1,7 @@
 const client = new Appwrite.Client();
 
 client
-    .setEndpoint('https://cloud.appwrite.io/v1')
+.setEndpoint('https://sfo.cloud.appwrite.io/v1')
     .setProject('6a5bc178003a2529271e');
 
 const functions = new Appwrite.Functions(client);
