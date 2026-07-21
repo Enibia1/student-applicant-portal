@@ -50,34 +50,19 @@ document.getElementById('applicantForm').addEventListener('submit', async (e) =>
 
         console.log("Appwrite response:", response);
 
-        let result = {};
-
-        if (response.responseBody) {
-            try {
-                result = JSON.parse(response.responseBody);
-            } catch (parseError) {
-                console.error("Response parsing error:", parseError);
-            }
-        }
-
-        if (response.statusCode === 200 || response.statusCode === 201) {
+        if (response.statusCode >= 200 && response.statusCode < 300) {
             msgDiv.style.color = "#10b981";
             msgDiv.innerText = "Application submitted successfully!";
             document.getElementById('applicantForm').reset();
         } else {
             msgDiv.style.color = "#ef4444";
-
-            msgDiv.innerText =
-                result.error ||
-                result.message ||
-                result.errors?.join(" | ") ||
-                `Submission failed. Status: ${response.statusCode}`;
+            msgDiv.innerText = "Application failed. Status: " + response.statusCode;
         }
 
     } catch (error) {
-        console.error("Submission error:", error);
+        console.error("Appwrite error:", error);
 
         msgDiv.style.color = "#ef4444";
-        msgDiv.innerText = "Submission failed. Please try again.";
+        msgDiv.innerText = "Error: " + error.message;
     }
 });
