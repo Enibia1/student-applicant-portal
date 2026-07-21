@@ -8,7 +8,6 @@ from appwrite.id import ID
 
 def main(context):
     try:
-        # Read the incoming request body
         body = context.req.body
 
         if isinstance(body, str):
@@ -16,7 +15,6 @@ def main(context):
         else:
             data = body
 
-        # These names must exactly match the frontend
         required_fields = [
             "StudentID",
             "FullName",
@@ -26,7 +24,6 @@ def main(context):
             "KYW_Consent_Signed"
         ]
 
-        # Check for missing fields
         missing_fields = [
             field for field in required_fields
             if field not in data
@@ -39,18 +36,16 @@ def main(context):
                 "fields": missing_fields
             }, 400)
 
-        # Consent must be accepted
         if data["KYW_Consent_Signed"] is not True:
             return context.res.json({
                 "success": False,
                 "error": "KYW Consent must be accepted"
             }, 400)
 
-        # Initialize Appwrite client
         client = Client()
 
         client.set_endpoint(
-            "https://cloud.appwrite.io/v1"
+            "https://sfo.cloud.appwrite.io/v1"
         )
 
         client.set_project(
@@ -63,9 +58,8 @@ def main(context):
 
         databases = Databases(client)
 
-        # Create student record
         result = databases.create_document(
-            database_id="6a5bdf2e0014484b10c9"
+            database_id="6a5bdf2e0014484b10c9",
             collection_id="students",
             document_id=ID.unique(),
             data={
@@ -74,11 +68,10 @@ def main(context):
                 "nationalIdentityNumber": data["NationalIdentityNumber"],
                 "mobileNumber": data["MobileNumber"],
                 "hubLocation": data["HubLocation"],
-                "kycConsentSigned": data["KYW_Consent_Signed"]
+                "kywConsentSigned": data["KYW_Consent_Signed"]
             }
         )
 
-        # Successful response
         return context.res.json({
             "success": True,
             "message": "Student application submitted successfully.",
