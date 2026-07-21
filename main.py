@@ -2,12 +2,13 @@ import json
 import os
 
 from appwrite.client import Client
-from appwrite.services.databases import Databases
+from appwrite.services.tables_db import TablesDB
 from appwrite.id import ID
 
 
 def main(context):
     try:
+        # Read the data sent from the frontend
         body = context.req.body
 
         if isinstance(body, str):
@@ -15,6 +16,7 @@ def main(context):
         else:
             data = body
 
+        # Required fields
         required_fields = [
             "StudentID",
             "FullName",
@@ -24,6 +26,7 @@ def main(context):
             "KYW_Consent_Signed"
         ]
 
+        # Check for missing fields
         missing_fields = [
             field for field in required_fields
             if field not in data
@@ -36,12 +39,14 @@ def main(context):
                 "fields": missing_fields
             }, 400)
 
+        # Check consent
         if data["KYW_Consent_Signed"] is not True:
             return context.res.json({
                 "success": False,
                 "error": "KYW Consent must be accepted"
             }, 400)
 
+        # Initialize Appwrite
         client = Client()
 
         client.set_endpoint(
@@ -56,26 +61,28 @@ def main(context):
             os.environ["APPWRITE_FUNCTION_API_KEY"]
         )
 
-        databases = Databases(client)
+        tables_db = TablesDB(client)
 
-        result = databases.create_document(
+        # Create a new student row
+        result = tables_db.create_row(
             database_id="6a5bdf2e0014484b10c9",
-            collection_id="students",
-            document_id=ID.unique(),
+            table_id="students",
+            row_id=ID.unique(),
             data={
                 "studentID": data["StudentID"],
                 "fullName": data["FullName"],
                 "nationalIdentityNumber": data["NationalIdentityNumber"],
                 "mobileNumber": data["MobileNumber"],
                 "hubLocation": data["HubLocation"],
-                "kywConsentSigned": data["KYW_Consent_Signed"]
+                "kycConsentSigned": data["KYW_Consent_Signed"]
             }
         )
 
+        # Success
         return context.res.json({
             "success": True,
             "message": "Student application submitted successfully.",
-            "documentId": result["$id"]
+            "rowId": result["$id"]
         }, 201)
 
     except Exception as error:
