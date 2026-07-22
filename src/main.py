@@ -27,12 +27,12 @@ APPWRITE_API_KEY = os.getenv("APPWRITE_API_KEY")
 
 DATABASE_ID = os.getenv(
     "APPWRITE_DATABASE_ID",
-    "REPLACE_WITH_YOUR_REAL_DATABASE_ID"
+    "6a5bdf2e0014484b10c9"
 )
 
 COLLECTION_ID = os.getenv(
     "APPWRITE_COLLECTION_ID",
-    "REPLACE_WITH_YOUR_REAL_COLLECTION_ID"
+    "students"
 )
 
 
@@ -446,7 +446,7 @@ def main(context):
         # ====================================================
 
         if DATABASE_ID.startswith(
-            "REPLACE_WITH"
+            " 6a5bdf2e0014484b10c9"
         ):
 
             return response({
@@ -459,7 +459,7 @@ def main(context):
 
 
         if COLLECTION_ID.startswith(
-            "REPLACE_WITH"
+            "students"
         ):
 
             return response({
