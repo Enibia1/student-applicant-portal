@@ -293,18 +293,18 @@ document
                  */
 
                 if (
-                    registrationMethod ===
-                    'phone'
-                ) {
+    registrationMethod ===
+    'phone'
+) {
 
-                    user =
-                        await account.createPhone(
-                            Appwrite.ID.unique(),
-                            identifier,
-                            password
-                        );
+    user =
+        await account.create(
+            Appwrite.ID.unique(),
+            identifier,
+            password
+        );
 
-                }
+}
 
 
                 console.log(
