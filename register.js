@@ -1,352 +1,577 @@
+// ==========================================
+// REMADEF ACCOUNT REGISTRATION V1
+// ==========================================
+
+// Appwrite Client
 const client = new Appwrite.Client();
 
 client
-    .setEndpoint('https://sfo.cloud.appwrite.io/v1')
-    .setProject('6a5bc178003a2529271e');
+    .setEndpoint("https://sfo.cloud.appwrite.io/v1")
+    .setProject("6a5bc178003a2529271e");
 
 const account = new Appwrite.Account(client);
 
 
-// ================================
-// REGISTRATION METHOD SELECTOR
-// ================================
+// ==========================================
+// ELEMENTS
+// ==========================================
+
+const registerForm =
+    document.getElementById("registerForm");
 
 const emailMethod =
-    document.getElementById('emailMethod');
+    document.getElementById("emailMethod");
 
 const phoneMethod =
-    document.getElementById('phoneMethod');
+    document.getElementById("phoneMethod");
 
 const emailSection =
-    document.getElementById('emailSection');
+    document.getElementById("emailSection");
 
 const phoneSection =
-    document.getElementById('phoneSection');
+    document.getElementById("phoneSection");
 
-let registrationMethod = 'email';
+const emailInput =
+    document.getElementById("email");
 
+const countryCodeInput =
+    document.getElementById("countryCode");
 
-// EMAIL METHOD
+const phoneNumberInput =
+    document.getElementById("phoneNumber");
 
-emailMethod.addEventListener('click', function () {
+const passwordInput =
+    document.getElementById("password");
 
-    registrationMethod = 'email';
+const confirmPasswordInput =
+    document.getElementById("confirmPassword");
 
-    emailMethod.classList.add('active');
+const registerButton =
+    document.getElementById("registerButton");
 
-    phoneMethod.classList.remove('active');
-
-    emailSection.classList.remove('hidden');
-
-    phoneSection.classList.add('hidden');
-
-});
-
-
-// PHONE METHOD
-
-phoneMethod.addEventListener('click', function () {
-
-    registrationMethod = 'phone';
-
-    phoneMethod.classList.add('active');
-
-    emailMethod.classList.remove('active');
-
-    phoneSection.classList.remove('hidden');
-
-    emailSection.classList.add('hidden');
-
-});
+const message =
+    document.getElementById("message");
 
 
-// ================================
-// PHONE NORMALIZATION
-// ================================
+// ==========================================
+// DEFAULT REGISTRATION METHOD
+// ==========================================
+
+let registrationMethod = "email";
+
+
+// ==========================================
+// MESSAGE HELPER
+// ==========================================
+
+function showMessage(
+    text,
+    type = "error"
+) {
+
+    message.innerText = text;
+
+    if (type === "success") {
+
+        message.style.color = "#10b981";
+
+    } else if (type === "info") {
+
+        message.style.color = "#006494";
+
+    } else {
+
+        message.style.color = "#ef4444";
+
+    }
+
+}
+
+
+// ==========================================
+// EMAIL REGISTRATION METHOD
+// ==========================================
+
+emailMethod.addEventListener(
+    "click",
+    function () {
+
+        registrationMethod = "email";
+
+        emailMethod.classList.add("active");
+
+        phoneMethod.classList.remove("active");
+
+        emailSection.classList.remove("hidden");
+
+        phoneSection.classList.add("hidden");
+
+        clearMessage();
+
+    }
+);
+
+
+// ==========================================
+// PHONE REGISTRATION METHOD
+// ==========================================
+
+phoneMethod.addEventListener(
+    "click",
+    function () {
+
+        registrationMethod = "phone";
+
+        phoneMethod.classList.add("active");
+
+        emailMethod.classList.remove("active");
+
+        phoneSection.classList.remove("hidden");
+
+        emailSection.classList.add("hidden");
+
+        clearMessage();
+
+    }
+);
+
+
+// ==========================================
+// CLEAR MESSAGE
+// ==========================================
+
+function clearMessage() {
+
+    message.innerText = "";
+
+}
+
+
+// ==========================================
+// NORMALIZE PHONE NUMBER
+// ==========================================
 
 function normalizePhoneNumber(
     countryCode,
     phoneNumber
 ) {
 
-    let number = phoneNumber
-        .replace(/\s+/g, '')
-        .replace(/-/g, '')
-        .replace(/\(/g, '')
-        .replace(/\)/g, '');
+    let number =
+        phoneNumber
+            .trim()
+            .replace(/\s+/g, "")
+            .replace(/-/g, "")
+            .replace(/\(/g, "")
+            .replace(/\)/g, "");
 
-    /*
-     * If the user enters:
-     *
-     * 08031234567
-     *
-     * remove the first 0.
-     */
 
-    if (number.startsWith('0')) {
+    // Remove leading +
+    if (number.startsWith("+")) {
 
         number = number.substring(1);
 
     }
 
+
+    const cleanCountryCode =
+        countryCode.replace("+", "");
+
+
     /*
-     * If the user enters:
+     * Example:
      *
+     * Country Code: +234
+     * Number: 08031234567
+     *
+     * Result:
      * +2348031234567
-     *
-     * remove the country code
-     * because the country code
-     * is already selected.
      */
 
+
+    // If user entered full international number
     if (
         number.startsWith(
-            countryCode.replace('+', '')
+            cleanCountryCode
         )
     ) {
 
-        number = number.substring(
-            countryCode.replace('+', '').length
-        );
+        return "+" + number;
 
     }
 
-    return countryCode + number;
+
+    // If user entered local number beginning with 0
+    if (
+        number.startsWith("0")
+    ) {
+
+        number =
+            number.substring(1);
+
+    }
+
+
+    return (
+        "+" +
+        cleanCountryCode +
+        number
+    );
 
 }
 
 
-// ================================
-// REGISTRATION FORM
-// ================================
+// ==========================================
+// BASIC PHONE VALIDATION
+// ==========================================
 
-document
-    .getElementById('registerForm')
-    .addEventListener(
-        'submit',
-        async function (event) {
-
-            event.preventDefault();
-
-            const message =
-                document.getElementById('message');
-
-            const registerButton =
-                document.getElementById(
-                    'registerButton'
-                );
-
-            const password =
-                document.getElementById(
-                    'password'
-                ).value;
-
-            const confirmPassword =
-                document.getElementById(
-                    'confirmPassword'
-                ).value;
-
-
-            // PASSWORD VALIDATION
-
-            if (
-                password !==
-                confirmPassword
-            ) {
-
-                message.style.color =
-                    '#ef4444';
-
-                message.innerText =
-                    'Passwords do not match.';
-
-                return;
-
-            }
-
-
-            if (
-                password.length < 8
-            ) {
-
-                message.style.color =
-                    '#ef4444';
-
-                message.innerText =
-                    'Password must be at least 8 characters.';
-
-                return;
-
-            }
-
-
-            let identifier;
-
-
-            // ================================
-            // EMAIL REGISTRATION
-            // ================================
-
-            if (
-                registrationMethod === 'email'
-            ) {
-
-                identifier =
-                    document.getElementById(
-                        'email'
-                    ).value.trim();
-
-
-                if (!identifier) {
-
-                    message.style.color =
-                        '#ef4444';
-
-                    message.innerText =
-                        'Please enter your email address.';
-
-                    return;
-
-                }
-
-            }
-
-
-            // ================================
-            // PHONE REGISTRATION
-            // ================================
-
-            if (
-                registrationMethod === 'phone'
-            ) {
-
-                const countryCode =
-                    document.getElementById(
-                        'countryCode'
-                    ).value;
-
-                const phoneNumber =
-                    document.getElementById(
-                        'phoneNumber'
-                    ).value.trim();
-
-
-                if (!phoneNumber) {
-
-                    message.style.color =
-                        '#ef4444';
-
-                    message.innerText =
-                        'Please enter your phone number.';
-
-                    return;
-
-                }
-
-
-                identifier =
-                    normalizePhoneNumber(
-                        countryCode,
-                        phoneNumber
-                    );
-
-            }
-
-
-            message.style.color =
-                '#006494';
-
-            message.innerText =
-                'Creating your REMADEF account...';
-
-
-            registerButton.disabled =
-                true;
-
-
-            try {
-
-                let user;
-
-
-                /*
-                 * EMAIL ACCOUNT
-                 */
-
-                if (
-                    registrationMethod ===
-                    'email'
-                ) {
-
-                    user =
-                        await account.create(
-                            Appwrite.ID.unique(),
-                            identifier,
-                            password
-                        );
-
-                }
-
-
-                /*
-                 * PHONE ACCOUNT
-                 */
-
-                if (
-    registrationMethod ===
-    'phone'
+function isValidPhoneNumber(
+    phoneNumber
 ) {
 
-    user =
-        await account.create(
-            Appwrite.ID.unique(),
-            identifier,
-            password
+    /*
+     * International phone number
+     * after normalization.
+     *
+     * Minimum: 7 digits
+     * Maximum: 15 digits
+     */
+
+    const digitsOnly =
+        phoneNumber.replace(
+            /\D/g,
+            ""
         );
+
+
+    return (
+        digitsOnly.length >= 7 &&
+        digitsOnly.length <= 15
+    );
 
 }
 
 
-                console.log(
-                    'REMADEF account created:',
-                    user
+// ==========================================
+// FORM SUBMISSION
+// ==========================================
+
+registerForm.addEventListener(
+    "submit",
+    async function (event) {
+
+        event.preventDefault();
+
+
+        // ----------------------------------
+        // GET PASSWORDS
+        // ----------------------------------
+
+        const password =
+            passwordInput.value;
+
+        const confirmPassword =
+            confirmPasswordInput.value;
+
+
+        // ----------------------------------
+        // PASSWORD VALIDATION
+        // ----------------------------------
+
+        if (
+            password.length < 8
+        ) {
+
+            showMessage(
+                "Password must be at least 8 characters."
+            );
+
+            return;
+
+        }
+
+
+        if (
+            password !==
+            confirmPassword
+        ) {
+
+            showMessage(
+                "Passwords do not match."
+            );
+
+            return;
+
+        }
+
+
+        // ----------------------------------
+        // IDENTIFIER
+        // ----------------------------------
+
+        let identifier;
+
+
+        // ==================================
+        // EMAIL REGISTRATION
+        // ==================================
+
+        if (
+            registrationMethod ===
+            "email"
+        ) {
+
+            identifier =
+                emailInput.value.trim();
+
+
+            if (
+                !identifier
+            ) {
+
+                showMessage(
+                    "Please enter your email address."
                 );
 
-
-                message.style.color =
-                    '#10b981';
-
-                message.innerText =
-                    'Account created successfully.';
-
-
-                document
-                    .getElementById(
-                        'registerForm'
-                    )
-                    .reset();
-
-
-            } catch (error) {
-
-                console.error(
-                    'Registration error:',
-                    error
-                );
-
-
-                message.style.color =
-                    '#ef4444';
-
-                message.innerText =
-                    error.message ||
-                    'Account creation failed.';
+                return;
 
             }
+
+
+            // Browser validation
+            if (
+                !emailInput.checkValidity()
+            ) {
+
+                showMessage(
+                    "Please enter a valid email address."
+                );
+
+                return;
+
+            }
+
+        }
+
+
+        // ==================================
+        // PHONE REGISTRATION
+        // ==================================
+
+        if (
+            registrationMethod ===
+            "phone"
+        ) {
+
+            const countryCode =
+                countryCodeInput.value;
+
+            const phoneNumber =
+                phoneNumberInput.value.trim();
+
+
+            if (
+                !phoneNumber
+            ) {
+
+                showMessage(
+                    "Please enter your phone number."
+                );
+
+                return;
+
+            }
+
+
+            identifier =
+                normalizePhoneNumber(
+                    countryCode,
+                    phoneNumber
+                );
+
+
+            if (
+                !isValidPhoneNumber(
+                    identifier
+                )
+            ) {
+
+                showMessage(
+                    "Please enter a valid phone number."
+                );
+
+                return;
+
+            }
+
+        }
+
+
+        // ==================================
+        // START REGISTRATION
+        // ==================================
+
+        showMessage(
+            "Creating your REMADEF account...",
+            "info"
+        );
+
+
+        registerButton.disabled =
+            true;
+
+        registerButton.innerText =
+            "Creating Account...";
+
+
+        try {
+
+
+            // ==================================
+            // EMAIL ACCOUNT
+            // ==================================
+
+            if (
+                registrationMethod ===
+                "email"
+            ) {
+
+                await account.create(
+                    Appwrite.ID.unique(),
+                    identifier,
+                    password
+                );
+
+            }
+
+
+            // ==================================
+            // PHONE ACCOUNT
+            // ==================================
+
+            else if (
+                registrationMethod ===
+                "phone"
+            ) {
+
+                await account.create(
+                    Appwrite.ID.unique(),
+                    identifier,
+                    password
+                );
+
+            }
+
+
+            // ==================================
+            // SUCCESS
+            // ==================================
+
+            showMessage(
+                "Account created successfully. You can now log in.",
+                "success"
+            );
+
+
+            registerForm.reset();
+
+
+            // Return default state
+            registrationMethod =
+                "email";
+
+
+            emailMethod.classList.add(
+                "active"
+            );
+
+            phoneMethod.classList.remove(
+                "active"
+            );
+
+            emailSection.classList.remove(
+                "hidden"
+            );
+
+            phoneSection.classList.add(
+                "hidden"
+            );
+
+
+            /*
+             * Optional redirect.
+             *
+             * Uncomment this if you want
+             * automatic redirection to login.
+             */
+
+            // setTimeout(function () {
+            //     window.location.href = "login.html";
+            // }, 2000);
+
+
+        } catch (error) {
+
+
+            console.error(
+                "REMADEF Registration Error:",
+                error
+            );
+
+
+            // ==================================
+            // FRIENDLY ERROR MESSAGES
+            // ==================================
+
+            let errorMessage =
+                "Account creation failed.";
+
+
+            if (
+                error.code === 409
+            ) {
+
+                errorMessage =
+                    "An account with this email or phone number already exists.";
+
+            }
+
+
+            else if (
+                error.code === 400
+            ) {
+
+                errorMessage =
+                    error.message ||
+                    "The registration information is invalid.";
+
+            }
+
+
+            else if (
+                error.message
+            ) {
+
+                errorMessage =
+                    error.message;
+
+            }
+
+
+            showMessage(
+                errorMessage
+            );
+
+
+        } finally {
 
 
             registerButton.disabled =
                 false;
 
+            registerButton.innerText =
+                "Create Account";
+
         }
-    );
+
+    }
+);
