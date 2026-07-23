@@ -1,4 +1,5 @@
-// register.js - Complete Fixed Version
+// register.js - REMADEF Registration System
+// Complete production-ready version
 
 import { Client, Account, ID } from 'https://cdn.jsdelivr.net/npm/appwrite@14.0.0/+esm';
 
@@ -10,101 +11,40 @@ const client = new Client()
 const account = new Account(client);
 
 // DOM Elements
-const registrationMethod = document.querySelector('input[name="method"]:checked') || { value: 'email' };
-const emailField = document.getElementById('email-field');
-const phoneField = document.getElementById('phone-field');
+let currentMethod = 'email';
+const registerForm = document.getElementById('register-form');
 const emailInput = document.getElementById('email');
 const phoneInput = document.getElementById('phone');
 const passwordInput = document.getElementById('password');
 const confirmPasswordInput = document.getElementById('confirm-password');
-const registerForm = document.getElementById('register-form');
 const errorDisplay = document.getElementById('error-message');
 const successDisplay = document.getElementById('success-message');
 
-// ✅ Track current registration method
-let currentMethod = 'email';
+// ============================================================
+// 🔧 HELPER FUNCTIONS
+// ============================================================
 
-// ✅ Toggle between Email and Phone
-function switchMethod(method) {
-    currentMethod = method;
-    
-    if (method === 'email') {
-        emailField.style.display = 'block';
-        phoneField.style.display = 'none';
-        emailInput.required = true;
-        phoneInput.required = false;
-        // Clear phone validation errors
-        phoneInput.classList.remove('error');
-        document.getElementById('phone-error')?.remove();
-    } else {
-        emailField.style.display = 'none';
-        phoneField.style.display = 'block';
-        emailInput.required = false;
-        phoneInput.required = true;
-        // Clear email validation errors
-        emailInput.classList.remove('error');
-        document.getElementById('email-error')?.remove();
-    }
-    
-    // Clear all errors when switching
-    clearErrors();
-}
-
-// ✅ Email validation
 function isValidEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-// ✅ Phone validation (Nigerian format)
 function isValidPhone(phone) {
-    // Remove non-digits
     const clean = phone.replace(/\D/g, '');
-    // Must be 10-11 digits (08012345678 or +2348012345678)
-    return clean.length >= 10 && clean.length <= 13;
+    return clean.length >= 10 && clean.length <= 11;
 }
 
-// ✅ Normalize phone number to +234 format
 function normalizePhone(phone) {
     let clean = phone.replace(/\D/g, '');
     if (clean.startsWith('0')) {
-        clean = '+234' + clean.slice(1);
+        return '+234' + clean.slice(1);
     } else if (clean.startsWith('234') && !clean.startsWith('+')) {
-        clean = '+' + clean;
+        return '+' + clean;
     } else if (!clean.startsWith('+') && clean.length === 10) {
-        clean = '+234' + clean;
+        return '+234' + clean;
     }
     return clean;
 }
 
-// ✅ Check for existing user BEFORE submission
-async function checkExistingUser(email, phone) {
-    try {
-        // This calls your Appwrite function to check duplicates
-        const response = await fetch('https://6a60f589000c366da0d3.sfo.appwrite.run/check-user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                email: email || undefined,
-                phone: phone || undefined
-            })
-        });
-        const data = await response.json();
-        return data.exists || false;
-    } catch (error) {
-        console.error('Duplicate check failed:', error);
-        return false;
-    }
-}
-
-// ✅ Clear all error messages
-function clearErrors() {
-    errorDisplay.textContent = '';
-    errorDisplay.style.display = 'none';
-    document.querySelectorAll('.error-message').forEach(el => el.remove());
-    document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
-}
-
-// ✅ Display error
 function showError(message) {
     errorDisplay.textContent = message;
     errorDisplay.style.display = 'block';
@@ -114,9 +54,9 @@ function showError(message) {
     errorDisplay.style.backgroundColor = '#f8d7da';
     errorDisplay.style.border = '1px solid #f5c6cb';
     errorDisplay.style.marginBottom = '15px';
+    successDisplay.style.display = 'none';
 }
 
-// ✅ Display success
 function showSuccess(message) {
     successDisplay.textContent = message;
     successDisplay.style.display = 'block';
@@ -126,38 +66,87 @@ function showSuccess(message) {
     successDisplay.style.backgroundColor = '#d4edda';
     successDisplay.style.border = '1px solid #c3e6cb';
     successDisplay.style.marginBottom = '15px';
+    errorDisplay.style.display = 'none';
     registerForm.style.display = 'none';
 }
 
-// ✅ Real-time duplicate check on blur
-async function checkDuplicateOnBlur(field, value) {
+function clearErrors() {
+    errorDisplay.textContent = '';
+    errorDisplay.style.display = 'none';
+    document.querySelectorAll('.field-error').forEach(el => el.remove());
+    document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+}
+
+// ============================================================
+// 🔄 METHOD SWITCHING
+// ============================================================
+
+function switchMethod(method) {
+    currentMethod = method;
+    clearErrors();
+    
+    const emailField = document.getElementById('email-field');
+    const phoneField = document.getElementById('phone-field');
+    const emailTab = document.getElementById('email-tab');
+    const phoneTab = document.getElementById('phone-tab');
+    
+    if (method === 'email') {
+        emailField.style.display = 'block';
+        phoneField.style.display = 'none';
+        emailInput.required = true;
+        phoneInput.required = false;
+        emailTab.classList.add('active');
+        phoneTab.classList.remove('active');
+    } else {
+        emailField.style.display = 'none';
+        phoneField.style.display = 'block';
+        emailInput.required = false;
+        phoneInput.required = true;
+        phoneTab.classList.add('active');
+        emailTab.classList.remove('active');
+    }
+}
+
+// Make switchMethod globally accessible
+window.switchMethod = switchMethod;
+
+// ============================================================
+// 🔍 REAL-TIME DUPLICATE CHECK
+// ============================================================
+
+async function checkDuplicate(field, value) {
     if (!value || value.length < 3) return;
     
     try {
         const response = await fetch('https://6a60f589000c366da0d3.sfo.appwrite.run/check-user', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                [field]: value 
-            })
+            body: JSON.stringify({ [field]: value })
         });
         const data = await response.json();
         
+        const errorEl = document.getElementById(`${field}-error`);
+        
         if (data.exists) {
-            field.classList.add('input-error');
-            const errorEl = document.createElement('div');
-            errorEl.className = 'error-message';
-            errorEl.style.color = '#dc3545';
-            errorEl.style.fontSize = '0.875rem';
-            errorEl.style.marginTop = '5px';
-            errorEl.textContent = `This ${field === 'email' ? 'email' : 'phone number'} is already registered. Please login.`;
-            field.parentNode.appendChild(errorEl);
+            const input = document.getElementById(field);
+            input.classList.add('input-error');
             
-            // Show login link
+            if (!errorEl) {
+                const newError = document.createElement('div');
+                newError.id = `${field}-error`;
+                newError.className = 'field-error';
+                newError.style.color = '#dc3545';
+                newError.style.fontSize = '0.875rem';
+                newError.style.marginTop = '5px';
+                newError.textContent = `This ${field} is already registered. Please login.`;
+                input.parentNode.appendChild(newError);
+            }
+            
             document.getElementById('login-redirect').style.display = 'block';
         } else {
-            field.classList.remove('input-error');
-            document.querySelectorAll('.error-message').forEach(el => el.remove());
+            const input = document.getElementById(field);
+            input.classList.remove('input-error');
+            if (errorEl) errorEl.remove();
             document.getElementById('login-redirect').style.display = 'none';
         }
     } catch (error) {
@@ -165,140 +154,28 @@ async function checkDuplicateOnBlur(field, value) {
     }
 }
 
-// ✅ Event Listeners for real-time validation
+// Event listeners for real-time duplicate check
 emailInput.addEventListener('blur', function() {
     if (currentMethod === 'email' && this.value.trim()) {
-        checkDuplicateOnBlur(this, this.value.trim());
+        checkDuplicate('email', this.value.trim());
     }
 });
 
 phoneInput.addEventListener('blur', function() {
     if (currentMethod === 'phone' && this.value.trim()) {
-        const normalized = normalizePhone(this.value.trim());
-        checkDuplicateOnBlur(this, normalized);
+        checkDuplicate('phone', normalizePhone(this.value.trim()));
     }
 });
 
-// ✅ Form submission
-registerForm.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    clearErrors();
-    
-    let email = emailInput.value.trim();
-    let phone = phoneInput.value.trim();
-    const password = passwordInput.value;
-    const confirmPassword = confirmPasswordInput.value;
-    
-    // ✅ Conditional validation based on selected method
-    if (currentMethod === 'email') {
-        if (!email) {
-            showError('Email address is required');
-            emailInput.focus();
-            return;
-        }
-        if (!isValidEmail(email)) {
-            showError('Please enter a valid email address');
-            emailInput.focus();
-            return;
-        }
-        phone = ''; // Clear phone when using email
-    } else {
-        if (!phone) {
-            showError('Phone number is required');
-            phoneInput.focus();
-            return;
-        }
-        if (!isValidPhone(phone)) {
-            showError('Please enter a valid Nigerian phone number (e.g., 08012345678)');
-            phoneInput.focus();
-            return;
-        }
-        email = ''; // Clear email when using phone
-        phone = normalizePhone(phone);
-    }
-    
-    // ✅ Password validation
-    if (!password || password.length < 8) {
-        showError('Password must be at least 8 characters');
-        passwordInput.focus();
-        return;
-    }
-    
-    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-        showError('Password must contain uppercase, lowercase, and a number');
-        passwordInput.focus();
-        return;
-    }
-    
-    if (password !== confirmPassword) {
-        showError('Passwords do not match');
-        confirmPasswordInput.focus();
-        return;
-    }
-    
-    // ✅ Double-check duplicate before sending
-    showError('Checking if account already exists...');
-    
-    try {
-        const checkResponse = await fetch('https://6a60f589000c366da0d3.sfo.appwrite.run/check-user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                email: email || undefined,
-                phone: phone || undefined
-            })
-        });
-        const checkData = await checkResponse.json();
-        
-        if (checkData.exists) {
-            showError('This account already exists. Please login.');
-            document.getElementById('login-redirect').style.display = 'block';
-            return;
-        }
-    } catch (error) {
-        console.error('Pre-submission check failed:', error);
-        // Continue anyway - backend will handle it
-    }
-    
-    // ✅ Create account via Appwrite function
-    try {
-        const response = await fetch('https://6a60f589000c366da0d3.sfo.appwrite.run/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email: email || undefined,
-                phone: phone || undefined,
-                password: password,
-                method: currentMethod
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showSuccess('Account created successfully! Redirecting to login...');
-            document.getElementById('login-redirect').style.display = 'block';
-            
-            // Auto-redirect to login after 3 seconds
-            setTimeout(() => {
-                window.location.href = 'login.html';
-            }, 3000);
-        } else {
-            showError(data.error || 'Registration failed. Please try again.');
-        }
-    } catch (error) {
-        console.error('Registration error:', error);
-        showError('Network error. Please check your connection and try again.');
-    }
-});
+// ============================================================
+// 📊 PASSWORD STRENGTH INDICATOR
+// ============================================================
 
-// ✅ Real-time password strength indicator
 passwordInput.addEventListener('input', function() {
     const password = this.value;
     const strengthEl = document.getElementById('password-strength');
     
     if (password.length === 0) {
-        strengthEl.textContent = '';
         strengthEl.style.display = 'none';
         return;
     }
@@ -313,18 +190,21 @@ passwordInput.addEventListener('input', function() {
     strengthEl.style.display = 'block';
     
     if (strength <= 2) {
-        strengthEl.textContent = 'Weak';
+        strengthEl.textContent = '🔴 Weak - Add uppercase, lowercase, and numbers';
         strengthEl.style.color = '#dc3545';
     } else if (strength <= 3) {
-        strengthEl.textContent = 'Medium';
+        strengthEl.textContent = '🟡 Medium - Add special characters for stronger password';
         strengthEl.style.color = '#ffc107';
     } else {
-        strengthEl.textContent = 'Strong';
+        strengthEl.textContent = '🟢 Strong - Good password!';
         strengthEl.style.color = '#28a745';
     }
 });
 
-// ✅ Show/hide password toggle
+// ============================================================
+// 👁️ PASSWORD TOGGLE
+// ============================================================
+
 document.querySelectorAll('.password-toggle').forEach(button => {
     button.addEventListener('click', function() {
         const input = this.parentElement.querySelector('input');
@@ -338,8 +218,148 @@ document.querySelectorAll('.password-toggle').forEach(button => {
     });
 });
 
-// ✅ Initialize
+// ============================================================
+// 📝 FORM SUBMISSION
+// ============================================================
+
+registerForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    clearErrors();
+    
+    let email = emailInput.value.trim();
+    let phone = phoneInput.value.trim();
+    const password = passwordInput.value;
+    const confirmPassword = confirmPasswordInput.value;
+    
+    // 1. Validate based on method
+    if (currentMethod === 'email') {
+        if (!email) {
+            showError('📧 Email address is required');
+            emailInput.focus();
+            return;
+        }
+        if (!isValidEmail(email)) {
+            showError('📧 Please enter a valid email address');
+            emailInput.focus();
+            return;
+        }
+        phone = ''; // Clear phone
+    } else {
+        if (!phone) {
+            showError('📱 Phone number is required');
+            phoneInput.focus();
+            return;
+        }
+        if (!isValidPhone(phone)) {
+            showError('📱 Please enter a valid Nigerian phone number (e.g., 08012345678)');
+            phoneInput.focus();
+            return;
+        }
+        email = ''; // Clear email
+        phone = normalizePhone(phone);
+    }
+    
+    // 2. Validate password
+    if (!password) {
+        showError('🔑 Password is required');
+        passwordInput.focus();
+        return;
+    }
+    if (password.length < 8) {
+        showError('🔑 Password must be at least 8 characters');
+        passwordInput.focus();
+        return;
+    }
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+        showError('🔑 Password must contain uppercase, lowercase, and a number');
+        passwordInput.focus();
+        return;
+    }
+    if (password !== confirmPassword) {
+        showError('🔑 Passwords do not match');
+        confirmPasswordInput.focus();
+        return;
+    }
+    
+    // 3. Show loading state
+    const submitBtn = document.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = '⏳ Creating account...';
+    submitBtn.disabled = true;
+    
+    // 4. Final duplicate check before sending
+    try {
+        const checkResponse = await fetch('https://6a60f589000c366da0d3.sfo.appwrite.run/check-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                email: email || undefined,
+                phone: phone || undefined
+            })
+        });
+        const checkData = await checkResponse.json();
+        
+        if (checkData.exists) {
+            showError(`This ${checkData.field} is already registered. Please login.`);
+            document.getElementById('login-redirect').style.display = 'block';
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+            return;
+        }
+    } catch (error) {
+        console.error('Pre-submission check failed:', error);
+        // Continue anyway - backend will handle it
+    }
+    
+    // 5. Send registration request
+    try {
+        const payload = {
+            method: currentMethod,
+            password: password
+        };
+        
+        if (email) payload.email = email;
+        if (phone) payload.phone = phone;
+        
+        const response = await fetch('https://6a60f589000c366da0d3.sfo.appwrite.run/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showSuccess(`✅ ${data.message}`);
+            document.getElementById('login-redirect').style.display = 'block';
+            
+            // Auto-redirect to login after 3 seconds
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 3000);
+        } else {
+            showError(`❌ ${data.error || 'Registration failed. Please try again.'}`);
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }
+    } catch (error) {
+        console.error('Registration error:', error);
+        showError('🌐 Network error. Please check your connection and try again.');
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    }
+});
+
+// ============================================================
+// 🚀 INITIALIZE
+// ============================================================
+
+// Set default to email
 switchMethod('email');
 
-// ✅ Export for testing
-export { switchMethod, isValidEmail, isValidPhone, normalizePhone };
+console.log('📝 REMADEF Registration System loaded successfully');
+console.log('📍 Endpoint: https://6a60f589000c366da0d3.sfo.appwrite.run/');
+console.log('📧 Email support: ✅');
+console.log('📱 Phone support: ✅');
+console.log('🔒 Password strength: ✅');
+console.log('🔄 Duplicate check: ✅');
