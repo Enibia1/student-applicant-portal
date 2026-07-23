@@ -1,4 +1,4 @@
-# src/main.py - REMADEF Registration (WORKING VERSION)
+# src/main.py - REMADEF Registration (FIXED)
 from appwrite.client import Client
 from appwrite.services.users import Users
 from appwrite.exception import AppwriteException
@@ -25,12 +25,25 @@ def main(context):
         )
     
     try:
-        # Parse request
-        data = context.req.json
-        if not data:
+        # ============================================================
+        # GET REQUEST BODY - FIXED!
+        # ============================================================
+        
+        # Get the raw body and parse it
+        body = context.req.body
+        if not body:
             return context.res.json({
                 'success': False,
                 'error': 'Missing request body'
+            }, 400, cors_headers)
+        
+        # Parse JSON
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            return context.res.json({
+                'success': False,
+                'error': 'Invalid JSON payload'
             }, 400, cors_headers)
         
         context.log(f"📝 Received: {json.dumps(data)}")
@@ -174,7 +187,7 @@ def main(context):
             if phone:
                 user_data['phone'] = phone
             
-            context.log(f"📝 Creating user with: {json.dumps({k: v for k, v in user_data.items() if k != 'password'})}")
+            context.log(f"📝 Creating user...")
             
             new_user = users.create(**user_data)
             
