@@ -1,7 +1,8 @@
-# src/main.py - REMADEF Registration (Using Scopes - NO API KEY needed!)
+# src/main.py - REMADEF Registration (FIXED for Appwrite SDK v22+)
 from appwrite.client import Client
 from appwrite.services.users import Users
 from appwrite.exception import AppwriteException
+from appwrite.query import Query
 import re
 import random
 import json
@@ -124,7 +125,7 @@ def main(context):
             }, 400, cors_headers)
         
         # ============================================================
-        # INITIALIZE APPUTE - Using Scopes (NO API KEY needed!)
+        # INITIALIZE APPUTE - Using Scopes
         # ============================================================
         
         try:
@@ -152,32 +153,38 @@ def main(context):
             }, 500, cors_headers)
         
         # ============================================================
-        # CHECK DUPLICATES
+        # CHECK DUPLICATES - FIXED!
         # ============================================================
         
         try:
-            user_list = users.list(limit=100)
-            for user in user_list.get('users', []):
-                if email and user.get('email') == email:
+            # Use queries instead of limit
+            if email:
+                response = users.list(queries=[Query.equal('email', email)])
+                if len(response.get('users', [])) > 0:
                     return context.res.json({
                         'success': False,
                         'error': 'This email is already registered'
                     }, 409, cors_headers)
-                if phone and user.get('phone') == phone:
+            
+            if phone:
+                response = users.list(queries=[Query.equal('phone', phone)])
+                if len(response.get('users', [])) > 0:
                     return context.res.json({
                         'success': False,
                         'error': 'This phone number is already registered'
                     }, 409, cors_headers)
+                    
         except Exception as e:
             context.error(f"⚠️ Duplicate check warning: {str(e)}")
+            # Continue anyway - the Appwrite error will catch duplicates
         
         # ============================================================
-        # CREATE USER
+        # CREATE USER - FIXED!
         # ============================================================
         
         try:
             user_data = {
-                'userId': 'unique()',
+                'user_id': 'unique()',  # Changed from userId to user_id
                 'password': password,
                 'name': 'Remora Trainee'
             }
