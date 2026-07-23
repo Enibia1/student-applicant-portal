@@ -5,6 +5,7 @@ from appwrite.exception import AppwriteException
 import re
 import random
 import json
+import os
 
 def main(context):
     # ============================================================
@@ -26,10 +27,9 @@ def main(context):
     
     try:
         # ============================================================
-        # GET REQUEST BODY - FIXED!
+        # GET REQUEST BODY
         # ============================================================
         
-        # Get the raw body and parse it
         body = context.req.body
         if not body:
             return context.res.json({
@@ -58,14 +58,12 @@ def main(context):
         # VALIDATION
         # ============================================================
         
-        # Validate method
         if method not in ['email', 'phone']:
             return context.res.json({
                 'success': False,
                 'error': 'Invalid method. Use "email" or "phone"'
             }, 400, cors_headers)
         
-        # Validate email
         if method == 'email':
             if not email:
                 return context.res.json({
@@ -79,7 +77,6 @@ def main(context):
                 }, 400, cors_headers)
             phone = None
         
-        # Validate phone
         if method == 'phone':
             if not phone:
                 return context.res.json({
@@ -87,7 +84,6 @@ def main(context):
                     'error': 'Phone is required'
                 }, 400, cors_headers)
             
-            # Clean phone
             clean = re.sub(r'\D', '', phone)
             if clean.startswith('0') and len(clean) == 11:
                 phone = '+234' + clean[1:]
@@ -104,7 +100,6 @@ def main(context):
                 }, 400, cors_headers)
             email = None
         
-        # Validate password
         if not password:
             return context.res.json({
                 'success': False,
@@ -132,14 +127,27 @@ def main(context):
             }, 400, cors_headers)
         
         # ============================================================
-        # INITIALIZE APPUTE
+        # INITIALIZE APPUTE - FIXED!
         # ============================================================
         
         try:
+            # Get environment variables - FIXED for Appwrite
+            project_id = os.environ.get('APPWRITE_PROJECT_ID')
+            api_key = os.environ.get('APPWRITE_API_KEY')
+            
+            context.log(f"🔑 Project ID: {project_id[:10]}... (masked)")
+            
+            if not project_id or not api_key:
+                context.error("❌ Missing environment variables")
+                return context.res.json({
+                    'success': False,
+                    'error': 'Server configuration error: Missing credentials'
+                }, 500, cors_headers)
+            
             client = Client()
             client.set_endpoint('https://cloud.appwrite.io/v1')
-            client.set_project(context.env.get('APPWRITE_PROJECT_ID'))
-            client.set_key(context.env.get('APPWRITE_API_KEY'))
+            client.set_project(project_id)
+            client.set_key(api_key)
             users = Users(client)
             
             context.log("✅ Appwrite client initialized")
@@ -147,7 +155,7 @@ def main(context):
             context.error(f"❌ Appwrite init failed: {str(e)}")
             return context.res.json({
                 'success': False,
-                'error': 'Server configuration error'
+                'error': f'Server configuration error: {str(e)}'
             }, 500, cors_headers)
         
         # ============================================================
@@ -155,7 +163,6 @@ def main(context):
         # ============================================================
         
         try:
-            # List users and check for duplicates
             user_list = users.list(limit=100)
             for user in user_list.get('users', []):
                 if email and user.get('email') == email:
@@ -170,7 +177,6 @@ def main(context):
                     }, 409, cors_headers)
         except Exception as e:
             context.error(f"⚠️ Duplicate check warning: {str(e)}")
-            # Continue anyway
         
         # ============================================================
         # CREATE USER
@@ -193,7 +199,6 @@ def main(context):
             
             context.log(f"✅ User created: {new_user.get('$id')}")
             
-            # Generate trainee ID
             trainee_id = f"REM-{str(random.randint(1, 9999)).zfill(4)}"
             
             return context.res.json({
