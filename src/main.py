@@ -17,12 +17,12 @@ def main(context):
 
     cors_headers = {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type"
     }
 
     # ============================================================
-    # HANDLE CORS PREFLIGHT REQUEST
+    # HANDLE CORS PREFLIGHT
     # ============================================================
 
     if context.req.method == "OPTIONS":
@@ -37,7 +37,7 @@ def main(context):
         )
 
     # ============================================================
-    # ALLOW ONLY POST FOR REGISTRATION
+    # REGISTRATION ONLY ACCEPTS POST
     # ============================================================
 
     if context.req.method != "POST":
@@ -54,7 +54,7 @@ def main(context):
     try:
 
         # ========================================================
-        # GET REQUEST BODY
+        # READ REQUEST BODY
         # ========================================================
 
         body = context.req.body
@@ -90,7 +90,7 @@ def main(context):
             )
 
         # ========================================================
-        # GET REGISTRATION DATA
+        # GET USER DATA
         # ========================================================
 
         method = str(
@@ -163,14 +163,13 @@ def main(context):
                     cors_headers
                 )
 
-            # Email registration should not include phone
             phone = None
 
         # ========================================================
         # PHONE REGISTRATION
         # ========================================================
 
-        elif method == "phone":
+        else:
 
             if not phone:
 
@@ -183,14 +182,12 @@ def main(context):
                     cors_headers
                 )
 
-            # Remove spaces, brackets, dashes, etc.
             clean_phone = re.sub(
                 r"\D",
                 "",
                 phone
             )
 
-            # Nigerian local number:
             # 08012345678
             if (
                 len(clean_phone) == 11
@@ -199,13 +196,11 @@ def main(context):
 
                 phone = "+234" + clean_phone[1:]
 
-            # Nigerian number without leading zero:
             # 8012345678
             elif len(clean_phone) == 10:
 
                 phone = "+234" + clean_phone
 
-            # International Nigerian format:
             # 2348012345678
             elif (
                 len(clean_phone) == 13
@@ -225,7 +220,6 @@ def main(context):
                     cors_headers
                 )
 
-            # Phone registration should not include email
             email = None
 
         # ========================================================
@@ -258,27 +252,29 @@ def main(context):
         # GET APPWRITE FUNCTION API KEY
         # ========================================================
 
-        api_key = os.environ.get(
-            "APPWRITE_FUNCTION_API_KEY"
+        # Appwrite automatically provides the dynamic
+        # Function API key in this request header.
+        api_key = context.req.headers.get(
+            "x-appwrite-key"
         )
 
         if not api_key:
 
             context.error(
-                "APPWRITE_FUNCTION_API_KEY is missing"
+                "Missing x-appwrite-key header"
             )
 
             return context.res.json(
                 {
                     "success": False,
-                    "error": "Server configuration error"
+                    "error": "Server authorization is unavailable"
                 },
                 500,
                 cors_headers
             )
 
         # ========================================================
-        # GET APPWRITE PROJECT ID
+        # GET PROJECT ID
         # ========================================================
 
         project_id = os.environ.get(
@@ -287,8 +283,14 @@ def main(context):
 
         if not project_id:
 
+            project_id = os.environ.get(
+                "APPWRITE_FUNCTION_PROJECT_ID"
+            )
+
+        if not project_id:
+
             context.error(
-                "APPWRITE_PROJECT_ID is missing"
+                "Missing Appwrite project ID"
             )
 
             return context.res.json(
@@ -339,7 +341,7 @@ def main(context):
             user_data["phone"] = phone
 
         # ========================================================
-        # CREATE APPWRITE ACCOUNT
+        # CREATE APPWRITE USER
         # ========================================================
 
         try:
@@ -383,7 +385,7 @@ def main(context):
             )
 
         # ========================================================
-        # APPWRITE ERROR HANDLING
+        # APPWRITE API ERROR
         # ========================================================
 
         except AppwriteException as e:
@@ -431,18 +433,24 @@ def main(context):
                     cors_headers
                 )
 
-            # Invalid Appwrite request
+            # Permission error
             elif (
-                "invalid"
+                "permission"
+                in error_lower
+                or "scope"
+                in error_lower
+                or "unauthorized"
+                in error_lower
+                or "forbidden"
                 in error_lower
             ):
 
                 return context.res.json(
                     {
                         "success": False,
-                        "error": "Invalid registration information"
+                        "error": "Registration service is not authorized"
                     },
-                    400,
+                    500,
                     cors_headers
                 )
 
