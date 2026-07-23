@@ -1,10 +1,11 @@
-# src/main.py - REMADEF Registration (SECURE - No hardcoded keys)
+# src/main.py - REMADEF Registration (FIXED - Using os.environ)
 from appwrite.client import Client
 from appwrite.services.users import Users
 from appwrite.exception import AppwriteException
 import re
 import random
 import json
+import os
 
 def main(context):
     # ============================================================
@@ -124,23 +125,26 @@ def main(context):
             }, 400, cors_headers)
         
         # ============================================================
-        # INITIALIZE APPUTE - SECURE WAY
+        # GET CREDENTIALS - FIXED using os.environ
+        # ============================================================
+        
+        project_id = os.environ.get('APPWRITE_PROJECT_ID')
+        api_key = os.environ.get('APPWRITE_API_KEY')
+        
+        context.log(f"🔑 Project ID: {project_id[:10] if project_id else 'None'}...")
+        
+        if not project_id or not api_key:
+            context.error("❌ Missing environment variables")
+            return context.res.json({
+                'success': False,
+                'error': 'Server configuration error: Missing credentials'
+            }, 500, cors_headers)
+        
+        # ============================================================
+        # INITIALIZE APPUTE
         # ============================================================
         
         try:
-            # Get from context.env (Appwrite's secure way)
-            project_id = context.env.get('APPWRITE_PROJECT_ID')
-            api_key = context.env.get('APPWRITE_API_KEY')
-            
-            context.log(f"🔑 Project ID: {project_id[:10] if project_id else 'None'}...")
-            
-            if not project_id or not api_key:
-                context.error("❌ Missing environment variables")
-                return context.res.json({
-                    'success': False,
-                    'error': 'Server configuration error: Missing credentials'
-                }, 500, cors_headers)
-            
             client = Client()
             client.set_endpoint('https://cloud.appwrite.io/v1')
             client.set_project(project_id)
