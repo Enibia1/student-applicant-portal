@@ -215,10 +215,10 @@
         }
 
         .login-redirect {
-            display: none;
             text-align: center;
             margin-top: 18px;
             font-size: 14px;
+            color: #666;
         }
 
         .login-redirect a {
@@ -245,6 +245,44 @@
 
         .hidden {
             display: none !important;
+        }
+
+        /* Success state overlay */
+        .success-overlay {
+            display: none;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .success-overlay .checkmark {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+
+        .success-overlay h2 {
+            color: #28a745;
+            margin-bottom: 10px;
+        }
+
+        .success-overlay p {
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .success-overlay .trainee-id {
+            background: #f0f2f5;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 700;
+            color: #667eea;
+            margin: 15px 0;
+            font-size: 20px;
+        }
+
+        .redirect-timer {
+            color: #999;
+            font-size: 13px;
+            margin-top: 15px;
         }
 
         @media (max-width: 480px) {
@@ -318,19 +356,27 @@
                 </div>
             </div>
 
-            <!-- Optional: Full Name -->
-            <div class="field-group">
-                <label>Full Name (Optional)</label>
-                <input type="text" id="full-name" placeholder="John Doe" />
-            </div>
-
             <!-- Submit Button -->
             <button type="submit" class="submit-btn">🚀 Create Account</button>
         </form>
 
+        <!-- Success Overlay (shown after registration) -->
+        <div id="success-overlay" class="success-overlay">
+            <div class="checkmark">✅</div>
+            <h2>Account Created!</h2>
+            <p>Your trainee ID:</p>
+            <div class="trainee-id" id="trainee-id-display">REM-0000</div>
+            <p style="font-size:13px; color:#666;">
+                We're setting up your profile...
+            </p>
+            <div class="redirect-timer">
+                Redirecting to login in <span id="countdown">3</span> seconds...
+            </div>
+        </div>
+
         <!-- Login Redirect -->
         <div id="login-redirect" class="login-redirect">
-            Already have an account? <a href="login.html">Login here</a>
+            Already have an account? <a href="#" onclick="goToLogin()">Login here</a>
         </div>
 
         <div class="terms">
