@@ -1,5 +1,5 @@
 # src/main.py - REMADEF Registration System
-# Complete production-ready version for Super App
+# Updated: Removed full name requirement
 
 from appwrite.client import Client
 from appwrite.services.users import Users
@@ -34,9 +34,8 @@ def main(context):
     phone = data.get('phone', '').strip() or None
     password = data.get('password', '')
     method = data.get('method', 'email')
+    # Full name is optional - will be set in profile edit
     full_name = data.get('full_name', '').strip() or 'Remora Trainee'
-    state = data.get('state', '').strip() or None
-    referral_code = data.get('referral_code', '').strip() or None
     
     context.log(f"📝 Registration - Method: {method}, Email: {email}, Phone: {phone}")
     
@@ -115,8 +114,7 @@ def main(context):
             'phone': new_user.get('phone'),
             'name': new_user.get('name'),
             'trainee_id': trainee_id,
-            'registration_date': datetime.now().isoformat(),
-            'referral_code': referral_code
+            'registration_date': datetime.now().isoformat()
         })
     
     except AppwriteException as e:
