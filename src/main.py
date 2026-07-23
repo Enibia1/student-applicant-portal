@@ -1,7 +1,6 @@
 from appwrite.client import Client
 from appwrite.services.users import Users
 from appwrite.exception import AppwriteException
-from appwrite.id import ID
 
 import os
 import re
@@ -37,7 +36,7 @@ def main(context):
         )
 
     # ============================================================
-    # REGISTRATION ONLY ACCEPTS POST
+    # ONLY POST IS ALLOWED
     # ============================================================
 
     if context.req.method != "POST":
@@ -90,7 +89,7 @@ def main(context):
             )
 
         # ========================================================
-        # GET USER DATA
+        # READ REGISTRATION DATA
         # ========================================================
 
         method = str(
@@ -114,7 +113,7 @@ def main(context):
         ).strip()
 
         # ========================================================
-        # VALIDATE REGISTRATION METHOD
+        # VALIDATE METHOD
         # ========================================================
 
         if method not in ["email", "phone"]:
@@ -169,7 +168,7 @@ def main(context):
         # PHONE REGISTRATION
         # ========================================================
 
-        else:
+        elif method == "phone":
 
             if not phone:
 
@@ -188,6 +187,7 @@ def main(context):
                 phone
             )
 
+            # Nigerian local format:
             # 08012345678
             if (
                 len(clean_phone) == 11
@@ -196,11 +196,13 @@ def main(context):
 
                 phone = "+234" + clean_phone[1:]
 
+            # Nigerian format without zero:
             # 8012345678
             elif len(clean_phone) == 10:
 
                 phone = "+234" + clean_phone
 
+            # International Nigerian format:
             # 2348012345678
             elif (
                 len(clean_phone) == 13
@@ -223,7 +225,7 @@ def main(context):
             email = None
 
         # ========================================================
-        # VALIDATE PASSWORD
+        # PASSWORD VALIDATION
         # ========================================================
 
         if not password:
@@ -249,11 +251,9 @@ def main(context):
             )
 
         # ========================================================
-        # GET APPWRITE FUNCTION API KEY
+        # GET APPWRITE DYNAMIC FUNCTION API KEY
         # ========================================================
 
-        # Appwrite automatically provides the dynamic
-        # Function API key in this request header.
         api_key = context.req.headers.get(
             "x-appwrite-key"
         )
@@ -267,7 +267,7 @@ def main(context):
             return context.res.json(
                 {
                     "success": False,
-                    "error": "Server authorization is unavailable"
+                    "error": "Server authorization unavailable"
                 },
                 500,
                 cors_headers
@@ -283,14 +283,8 @@ def main(context):
 
         if not project_id:
 
-            project_id = os.environ.get(
-                "APPWRITE_FUNCTION_PROJECT_ID"
-            )
-
-        if not project_id:
-
             context.error(
-                "Missing Appwrite project ID"
+                "APPWRITE_PROJECT_ID is missing"
             )
 
             return context.res.json(
@@ -323,11 +317,25 @@ def main(context):
         users = Users(client)
 
         # ========================================================
+        # GENERATE USER ID
+        # ========================================================
+
+        user_id = (
+            "rem_"
+            + str(
+                random.randint(
+                    100000000,
+                    999999999
+                )
+            )
+        )
+
+        # ========================================================
         # PREPARE USER DATA
         # ========================================================
 
         user_data = {
-            "user_id": ID.unique(),
+            "user_id": user_id,
             "password": password,
             "name": name
         }
@@ -385,7 +393,7 @@ def main(context):
             )
 
         # ========================================================
-        # APPWRITE API ERROR
+        # APPWRITE ERROR HANDLING
         # ========================================================
 
         except AppwriteException as e:
@@ -399,7 +407,6 @@ def main(context):
                 + error_message
             )
 
-            # Duplicate email
             if (
                 "email already exists"
                 in error_lower
@@ -416,8 +423,7 @@ def main(context):
                     cors_headers
                 )
 
-            # Duplicate phone
-            elif (
+            if (
                 "phone already exists"
                 in error_lower
                 or "user with the same phone"
@@ -433,38 +439,20 @@ def main(context):
                     cors_headers
                 )
 
-            # Permission error
-            elif (
-                "permission"
-                in error_lower
-                or "scope"
-                in error_lower
-                or "unauthorized"
-                in error_lower
-                or "forbidden"
-                in error_lower
-            ):
+            context.error(
+                "Full Appwrite error: "
+                + error_message
+            )
 
-                return context.res.json(
-                    {
-                        "success": False,
-                        "error": "Registration service is not authorized"
-                    },
-                    500,
-                    cors_headers
-                )
-
-            # Other Appwrite error
-            else:
-
-                return context.res.json(
-                    {
-                        "success": False,
-                        "error": "Registration failed"
-                    },
-                    500,
-                    cors_headers
-                )
+            return context.res.json(
+                {
+                    "success": False,
+                    "error": "Registration failed",
+                    "details": error_message
+                },
+                500,
+                cors_headers
+            )
 
         # ========================================================
         # GENERAL USER CREATION ERROR
@@ -480,7 +468,8 @@ def main(context):
             return context.res.json(
                 {
                     "success": False,
-                    "error": "Account creation failed"
+                    "error": "Account creation failed",
+                    "details": str(e)
                 },
                 500,
                 cors_headers
@@ -500,7 +489,8 @@ def main(context):
         return context.res.json(
             {
                 "success": False,
-                "error": "Internal server error"
+                "error": "Internal server error",
+                "details": str(e)
             },
             500,
             cors_headers
