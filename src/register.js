@@ -1,5 +1,5 @@
 // src/register.js - REMADEF Registration
-// 🔥 YOUR APPUTE FUNCTION URL - VERIFY THIS IS CORRECT!
+// 🔥 YOUR APPUTE FUNCTION URL
 const API_URL = 'https://6a60f589000c366da0d3.sfo.appwrite.run';
 
 let currentMethod = 'email';
@@ -25,13 +25,16 @@ const btnText = document.getElementById('btn-text');
 const btnSpinner = document.getElementById('btn-spinner');
 const submitBtn = document.querySelector('.submit-btn');
 
-// Requirements
+// Requirements elements
 const reqLength = document.getElementById('req-length');
 const reqLower = document.getElementById('req-lower');
 const reqUpper = document.getElementById('req-upper');
 const reqNumber = document.getElementById('req-number');
 
-// Helpers
+// ============================================================
+// HELPERS
+// ============================================================
+
 function isValidEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
@@ -72,7 +75,10 @@ function setLoading(loading) {
     }
 }
 
-// Password Strength
+// ============================================================
+// PASSWORD STRENGTH
+// ============================================================
+
 passwordInput.addEventListener('input', function() {
     const pwd = this.value;
     let score = 0;
@@ -131,7 +137,10 @@ passwordInput.addEventListener('input', function() {
     }
 });
 
-// Method Switching
+// ============================================================
+// METHOD SWITCHING
+// ============================================================
+
 window.switchMethod = function(method) {
     currentMethod = method;
     hideError();
@@ -149,7 +158,10 @@ window.switchMethod = function(method) {
     }
 };
 
-// Password Toggle
+// ============================================================
+// PASSWORD TOGGLE
+// ============================================================
+
 window.togglePassword = function(fieldId) {
     const input = document.getElementById(fieldId);
     const btn = input.parentElement.querySelector('.password-toggle');
@@ -162,12 +174,18 @@ window.togglePassword = function(fieldId) {
     }
 };
 
-// Login Redirect
+// ============================================================
+// LOGIN REDIRECT
+// ============================================================
+
 window.goToLogin = function() {
     window.location.href = 'login.html';
 };
 
-// Form Submit
+// ============================================================
+// FORM SUBMIT
+// ============================================================
+
 form.addEventListener('submit', async function(e) {
     e.preventDefault();
     hideError();
@@ -203,8 +221,8 @@ form.addEventListener('submit', async function(e) {
         if (email) payload.email = email;
         if (phone) payload.phone = phone;
         
-        console.log('📤 Sending:', payload);
-        console.log('📍 API:', API_URL);
+        console.log('📤 Sending to:', API_URL);
+        console.log('📦 Payload:', payload);
         
         const response = await fetch(API_URL, {
             method: 'POST',
@@ -212,8 +230,10 @@ form.addEventListener('submit', async function(e) {
             body: JSON.stringify(payload)
         });
         
+        console.log('📥 Response status:', response.status);
+        
         const data = await response.json();
-        console.log('📦 Response:', data);
+        console.log('📦 Response data:', data);
         
         if (data.success) {
             form.style.display = 'none';
@@ -242,5 +262,9 @@ form.addEventListener('submit', async function(e) {
     }
 });
 
+// ============================================================
+// INIT
+// ============================================================
+
 console.log('✅ REMADEF Registration loaded');
-console.log('📍 API:', API_URL);
+console.log('📍 API URL:', API_URL);
