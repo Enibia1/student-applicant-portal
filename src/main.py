@@ -1,3 +1,8 @@
+# ============================================================
+# REMADEF ACCOUNT REGISTRATION FUNCTION
+# Appwrite Cloud Function - Python
+# ============================================================
+
 import os
 import json
 import re
@@ -13,8 +18,16 @@ from appwrite.exception import AppwriteException
 # CONFIGURATION
 # ============================================================
 
-PROJECT_ID = os.environ.get("APPWRITE_FUNCTION_PROJECT_ID")
-API_KEY = os.environ.get("APPWRITE_API_KEY")
+PROJECT_ID = os.environ.get(
+    "APPWRITE_PROJECT_ID",
+    "6a5bc178003a2529271e"
+)
+
+API_KEY = os.environ.get(
+    "APPWRITE_API_KEY"
+)
+
+ALLOWED_ORIGIN = "https://enibia1.github.io"
 
 
 # ============================================================
@@ -22,10 +35,10 @@ API_KEY = os.environ.get("APPWRITE_API_KEY")
 # ============================================================
 
 CORS_HEADERS = {
-    "Access-Control-Allow-Origin": "https://enibia1.github.io",
+    "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Accept",
-    "Access-Control-Max-Age": "86400",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Max-Age": "86400"
 }
 
 
@@ -33,34 +46,63 @@ CORS_HEADERS = {
 # RESPONSE HELPER
 # ============================================================
 
-def response_json(res, status_code, body):
+def response_json(res, status_code, data):
+
     return res.json(
-        body,
-        status_code=status_code,
-        headers={
-            **CORS_HEADERS,
-            "Content-Type": "application/json",
-        }
+        data,
+        status_code,
+        CORS_HEADERS
     )
 
 
 # ============================================================
-# TRAINEE ID
-# ============================================================
-
-def generate_trainee_id():
-    chars = string.ascii_uppercase + string.digits
-    code = ''.join(secrets.choice(chars) for _ in range(6))
-    return f"REM-{code}"
-
-
-# ============================================================
-# EMAIL VALIDATION
+# VALIDATE EMAIL
 # ============================================================
 
 def valid_email(email):
+
     pattern = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
+
     return re.match(pattern, email) is not None
+
+
+# ============================================================
+# NORMALIZE PHONE NUMBER
+# ============================================================
+
+def normalize_phone(phone):
+
+    phone = re.sub(r"\D", "", phone)
+
+    if phone.startswith("0"):
+
+        return "+234" + phone[1:]
+
+    if phone.startswith("234"):
+
+        return "+" + phone
+
+    if len(phone) == 10:
+
+        return "+234" + phone
+
+    return phone
+
+
+# ============================================================
+# GENERATE TRAINEE ID
+# ============================================================
+
+def generate_trainee_id():
+
+    characters = string.ascii_uppercase + string.digits
+
+    random_part = "".join(
+        secrets.choice(characters)
+        for _ in range(8)
+    )
+
+    return f"REM-{random_part}"
 
 
 # ============================================================
@@ -72,20 +114,20 @@ def main(context):
     req = context.req
     res = context.res
 
-    # --------------------------------------------------------
-    # HANDLE CORS PREFLIGHT REQUEST
-    # --------------------------------------------------------
+    # ========================================================
+    # CORS PREFLIGHT REQUEST
+    # ========================================================
 
     if req.method == "OPTIONS":
 
         return res.empty(
-            status_code=204,
-            headers=CORS_HEADERS
+            204,
+            CORS_HEADERS
         )
 
-    # --------------------------------------------------------
-    # ONLY POST ALLOWED
-    # --------------------------------------------------------
+    # ========================================================
+    # ONLY POST REQUESTS
+    # ========================================================
 
     if req.method != "POST":
 
@@ -98,26 +140,54 @@ def main(context):
             }
         )
 
-    # --------------------------------------------------------
+    # ========================================================
+    # CHECK APPWRITE API KEY
+    # ========================================================
+
+    if not API_KEY:
+
+        context.error(
+            "APPWRITE_API_KEY environment variable is missing"
+        )
+
+        return response_json(
+            res,
+            500,
+            {
+                "success": False,
+                "error": "Server configuration error"
+            }
+        )
+
+    # ========================================================
     # READ REQUEST BODY
-    # --------------------------------------------------------
+    # ========================================================
 
     try:
 
         body = req.body
 
+        # Appwrite may provide body as a string
         if isinstance(body, str):
-            data = json.loads(body)
 
-        elif isinstance(body, dict):
-            data = body
+            if not body.strip():
 
-        else:
-            data = {}
+                body = {}
+
+            else:
+
+                body = json.loads(body)
+
+        # Safety fallback
+        if not isinstance(body, dict):
+
+            body = {}
 
     except Exception as error:
 
-        context.error(f"Request parsing error: {str(error)}")
+        context.error(
+            f"Invalid request body: {str(error)}"
+        )
 
         return response_json(
             res,
@@ -128,19 +198,29 @@ def main(context):
             }
         )
 
-    # --------------------------------------------------------
+    # ========================================================
     # EXTRACT DATA
-    # --------------------------------------------------------
+    # ========================================================
 
-    method = data.get("method", "email")
+    method = body.get("method")
+    email = body.get("email")
+    phone = body.get("phone")
+    password = body.get("password")
 
-    email = data.get("email")
-    phone = data.get("phone")
-    password = data.get("password")
+    # ========================================================
+    # BASIC VALIDATION
+    # ========================================================
 
-    # --------------------------------------------------------
-    # VALIDATE PASSWORD
-    # --------------------------------------------------------
+    if not method:
+
+        return response_json(
+            res,
+            400,
+            {
+                "success": False,
+                "error": "Registration method is required"
+            }
+        )
 
     if not password:
 
@@ -152,6 +232,10 @@ def main(context):
                 "error": "Password is required"
             }
         )
+
+    # ========================================================
+    # PASSWORD VALIDATION
+    # ========================================================
 
     if len(password) < 8:
 
@@ -171,7 +255,7 @@ def main(context):
             400,
             {
                 "success": False,
-                "error": "Password requires a lowercase letter"
+                "error": "Password must contain a lowercase letter"
             }
         )
 
@@ -182,7 +266,7 @@ def main(context):
             400,
             {
                 "success": False,
-                "error": "Password requires an uppercase letter"
+                "error": "Password must contain an uppercase letter"
             }
         )
 
@@ -193,13 +277,13 @@ def main(context):
             400,
             {
                 "success": False,
-                "error": "Password requires a number"
+                "error": "Password must contain a number"
             }
         )
 
-    # --------------------------------------------------------
+    # ========================================================
     # VALIDATE EMAIL OR PHONE
-    # --------------------------------------------------------
+    # ========================================================
 
     if method == "email":
 
@@ -214,7 +298,7 @@ def main(context):
                 }
             )
 
-        email = email.strip().lower()
+        email = str(email).strip().lower()
 
         if not valid_email(email):
 
@@ -240,7 +324,18 @@ def main(context):
                 }
             )
 
-        phone = phone.strip()
+        phone = normalize_phone(str(phone))
+
+        if not phone.startswith("+234"):
+
+            return response_json(
+                res,
+                400,
+                {
+                    "success": False,
+                    "error": "Invalid Nigerian phone number"
+                }
+            )
 
     else:
 
@@ -265,14 +360,19 @@ def main(context):
             "https://sfo.cloud.appwrite.io/v1"
         )
 
-        client.set_project(PROJECT_ID)
-        client.set_key(API_KEY)
+        client.set_project(
+            PROJECT_ID
+        )
+
+        client.set_key(
+            API_KEY
+        )
 
         users = Users(client)
 
-        # ----------------------------------------------------
+        # ====================================================
         # CREATE USER
-        # ----------------------------------------------------
+        # ====================================================
 
         if method == "email":
 
@@ -290,24 +390,44 @@ def main(context):
                 password=password
             )
 
-        # ----------------------------------------------------
-        # SAFE SDK OBJECT EXTRACTION
-        # ----------------------------------------------------
+        # ====================================================
+        # SAFE APPWRITE USER ID EXTRACTION
+        #
+        # IMPORTANT:
+        # Appwrite Python SDK may return a User object,
+        # not a normal Python dictionary.
+        # Therefore DO NOT use user.get().
+        # ====================================================
 
-        user_id = getattr(user, "id", None)
+        user_id = getattr(
+            user,
+            "id",
+            None
+        )
 
         if not user_id:
 
-            try:
-                user_id = user["$id"]
-            except Exception:
-                user_id = None
+            user_id = getattr(
+                user,
+                "$id",
+                None
+            )
+
+        if not user_id and isinstance(user, dict):
+
+            user_id = user.get(
+                "$id"
+            )
 
         if not user_id:
 
             raise Exception(
-                "User was created but Appwrite user ID was unavailable"
+                "User created but Appwrite user ID could not be found"
             )
+
+        # ====================================================
+        # GENERATE TRAINEE ID
+        # ====================================================
 
         trainee_id = generate_trainee_id()
 
@@ -315,9 +435,13 @@ def main(context):
             f"Account created successfully: {user_id}"
         )
 
-        # ----------------------------------------------------
-        # SUCCESS
-        # ----------------------------------------------------
+        context.log(
+            f"Trainee ID generated: {trainee_id}"
+        )
+
+        # ====================================================
+        # SUCCESS RESPONSE
+        # ====================================================
 
         return response_json(
             res,
@@ -333,10 +457,16 @@ def main(context):
             }
         )
 
+    # ========================================================
+    # APPWRITE ERROR
+    # ========================================================
+
     except AppwriteException as error:
 
+        error_message = str(error)
+
         context.error(
-            f"Appwrite error: {str(error)}"
+            f"Appwrite error: {error_message}"
         )
 
         return response_json(
@@ -344,14 +474,20 @@ def main(context):
             400,
             {
                 "success": False,
-                "error": str(error)
+                "error": error_message
             }
         )
 
+    # ========================================================
+    # GENERAL ERROR
+    # ========================================================
+
     except Exception as error:
 
+        error_message = str(error)
+
         context.error(
-            f"Registration error: {str(error)}"
+            f"Registration error: {error_message}"
         )
 
         return response_json(
