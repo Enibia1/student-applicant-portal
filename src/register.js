@@ -1,13 +1,16 @@
-// ============================================================
-// REMADEF REGISTRATION - MOBILE DIAGNOSTIC VERSION
-// ============================================================
+// src/register.js
+// REMADEF ACCOUNT REGISTRATION
 
-const API_URL = 'https://6a60f589000c366da0d3.sfo.appwrite.run';
+const API_URL =
+    'https://6a60f589000c366da0d3.sfo.appwrite.run';
 
 let currentMethod = 'email';
 let timer = null;
 
-// DOM
+// ============================================================
+// DOM ELEMENTS
+// ============================================================
+
 const form = document.getElementById('register-form');
 const emailInput = document.getElementById('email');
 const phoneInput = document.getElementById('phone');
@@ -16,13 +19,11 @@ const confirmInput = document.getElementById('confirm-password');
 
 const errorDisplay = document.getElementById('error-message');
 const successBox = document.getElementById('success-box');
-
 const traineeIdDisplay = document.getElementById('trainee-id-display');
 const countdownDisplay = document.getElementById('countdown');
 
 const emailTab = document.getElementById('email-tab');
 const phoneTab = document.getElementById('phone-tab');
-
 const emailField = document.getElementById('email-field');
 const phoneField = document.getElementById('phone-field');
 
@@ -39,8 +40,35 @@ const reqUpper = document.getElementById('req-upper');
 const reqNumber = document.getElementById('req-number');
 
 // ============================================================
-// UI
+// HELPERS
 // ============================================================
+
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function isValidPhone(phone) {
+    const clean = phone.replace(/\D/g, '');
+    return clean.length >= 10 && clean.length <= 11;
+}
+
+function normalizePhone(phone) {
+    let clean = phone.replace(/\D/g, '');
+
+    if (clean.startsWith('0')) {
+        return '+234' + clean.slice(1);
+    }
+
+    if (clean.startsWith('234')) {
+        return '+' + clean;
+    }
+
+    if (clean.length === 10) {
+        return '+234' + clean;
+    }
+
+    return clean;
+}
 
 function showError(message) {
     errorDisplay.textContent = message;
@@ -69,37 +97,6 @@ function setLoading(loading) {
 }
 
 // ============================================================
-// VALIDATION
-// ============================================================
-
-function isValidEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function isValidPhone(phone) {
-    const clean = phone.replace(/\D/g, '');
-    return clean.length >= 10 && clean.length <= 11;
-}
-
-function normalizePhone(phone) {
-    let clean = phone.replace(/\D/g, '');
-
-    if (clean.startsWith('0')) {
-        return '+234' + clean.substring(1);
-    }
-
-    if (clean.startsWith('234')) {
-        return '+' + clean;
-    }
-
-    if (clean.length === 10) {
-        return '+234' + clean;
-    }
-
-    return clean;
-}
-
-// ============================================================
 // PASSWORD STRENGTH
 // ============================================================
 
@@ -114,13 +111,9 @@ passwordInput.addEventListener('input', function () {
         number: /\d/.test(password)
     };
 
-    let score = 0;
+    function updateRequirement(element, passed) {
 
-    function update(element, valid) {
-
-        if (!element) return;
-
-        if (valid) {
+        if (passed) {
             element.className = 'met';
             element.textContent =
                 element.textContent.replace('🔴', '✅');
@@ -131,41 +124,56 @@ passwordInput.addEventListener('input', function () {
         }
     }
 
-    update(reqLength, checks.length);
-    update(reqLower, checks.lower);
-    update(reqUpper, checks.upper);
-    update(reqNumber, checks.number);
+    updateRequirement(reqLength, checks.length);
+    updateRequirement(reqLower, checks.lower);
+    updateRequirement(reqUpper, checks.upper);
+    updateRequirement(reqNumber, checks.number);
+
+    let score = 0;
 
     if (checks.length) score++;
     if (checks.lower) score++;
     if (checks.upper) score++;
     if (checks.number) score++;
 
-    strengthBar.style.width = (score / 4 * 100) + '%';
+    strengthBar.style.width = ((score / 4) * 100) + '%';
 
     if (password.length === 0) {
         strengthBar.style.background = '#e8ecf1';
         strengthText.textContent = '';
-    } else if (score <= 1) {
+        return;
+    }
+
+    if (score <= 1) {
         strengthBar.style.background = '#dc3545';
         strengthText.textContent = '🔴 Weak';
-    } else if (score === 2) {
+        strengthText.style.color = '#dc3545';
+    }
+
+    else if (score === 2) {
         strengthBar.style.background = '#ffc107';
         strengthText.textContent = '🟡 Medium';
-    } else if (score === 3) {
+        strengthText.style.color = '#ffc107';
+    }
+
+    else if (score === 3) {
         strengthBar.style.background = '#17a2b8';
         strengthText.textContent = '🔵 Good';
-    } else {
+        strengthText.style.color = '#17a2b8';
+    }
+
+    else {
         strengthBar.style.background = '#28a745';
         strengthText.textContent = '🟢 Strong';
+        strengthText.style.color = '#28a745';
     }
 });
 
 // ============================================================
-// METHOD SWITCH
+// SWITCH EMAIL / PHONE
 // ============================================================
 
-window.switchMethod = function(method) {
+window.switchMethod = function (method) {
 
     currentMethod = method;
 
@@ -190,18 +198,23 @@ window.switchMethod = function(method) {
 };
 
 // ============================================================
-// PASSWORD TOGGLE
+// PASSWORD VISIBILITY
 // ============================================================
 
-window.togglePassword = function(fieldId) {
+window.togglePassword = function (fieldId) {
 
     const input = document.getElementById(fieldId);
-    const button = input.parentElement.querySelector('.password-toggle');
+
+    const button =
+        input.parentElement.querySelector('.password-toggle');
 
     if (input.type === 'password') {
+
         input.type = 'text';
         button.textContent = '🙈';
+
     } else {
+
         input.type = 'password';
         button.textContent = '👁️';
     }
@@ -211,7 +224,7 @@ window.togglePassword = function(fieldId) {
 // LOGIN
 // ============================================================
 
-window.goToLogin = function() {
+window.goToLogin = function () {
     window.location.href = 'login.html';
 };
 
@@ -219,7 +232,7 @@ window.goToLogin = function() {
 // REGISTRATION
 // ============================================================
 
-form.addEventListener('submit', async function(event) {
+form.addEventListener('submit', async function (event) {
 
     event.preventDefault();
 
@@ -231,7 +244,10 @@ form.addEventListener('submit', async function(event) {
     const password = passwordInput.value;
     const confirmPassword = confirmInput.value;
 
-    // CONTACT VALIDATION
+    // --------------------------------------------------------
+    // VALIDATION
+    // --------------------------------------------------------
+
     if (currentMethod === 'email') {
 
         if (!email) {
@@ -262,29 +278,28 @@ form.addEventListener('submit', async function(event) {
         email = '';
     }
 
-    // PASSWORD VALIDATION
     if (!password) {
         showError('🔑 Password is required');
         return;
     }
 
     if (password.length < 8) {
-        showError('🔑 Password must be 8+ characters');
+        showError('🔑 Password must be at least 8 characters');
         return;
     }
 
     if (!/[a-z]/.test(password)) {
-        showError('🔑 Need a lowercase letter');
+        showError('🔑 Password needs a lowercase letter');
         return;
     }
 
     if (!/[A-Z]/.test(password)) {
-        showError('🔑 Need an uppercase letter');
+        showError('🔑 Password needs an uppercase letter');
         return;
     }
 
     if (!/\d/.test(password)) {
-        showError('🔑 Need a number');
+        showError('🔑 Password needs a number');
         return;
     }
 
@@ -293,77 +308,83 @@ form.addEventListener('submit', async function(event) {
         return;
     }
 
+    // --------------------------------------------------------
+    // START LOADING
+    // --------------------------------------------------------
+
     setLoading(true);
-
-    const payload = {
-        method: currentMethod,
-        password: password
-    };
-
-    if (email) payload.email = email;
-    if (phone) payload.phone = phone;
 
     try {
 
+        const payload = {
+            method: currentMethod,
+            password: password
+        };
+
+        if (email) {
+            payload.email = email;
+        }
+
+        if (phone) {
+            payload.phone = phone;
+        }
+
+        console.log('Sending registration request');
+
+        /*
+         * IMPORTANT:
+         *
+         * text/plain avoids the browser CORS preflight request.
+         * The Python backend still reads the body as JSON.
+         */
+
         const response = await fetch(API_URL, {
+
             method: 'POST',
 
             headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Content-Type': 'text/plain'
             },
 
             body: JSON.stringify(payload)
+
         });
 
+        console.log('Response status:', response.status);
+
         const responseText = await response.text();
+
+        console.log('Response:', responseText);
 
         let data;
 
         try {
             data = JSON.parse(responseText);
-        } catch (error) {
+        } catch (parseError) {
 
-            showError(
-                '⚠️ Server response error. HTTP Status: ' +
-                response.status
+            throw new Error(
+                'Server returned an invalid response'
             );
-
-            setLoading(false);
-            return;
         }
 
-        if (!response.ok) {
-
-            showError(
-                '❌ ' +
-                (data.error ||
-                 data.message ||
-                 'Registration failed') +
-                ' (' + response.status + ')'
-            );
-
-            setLoading(false);
-            return;
-        }
-
-        if (data.success) {
+        if (response.ok && data.success) {
 
             form.style.display = 'none';
+
             successBox.style.display = 'block';
 
             traineeIdDisplay.textContent =
-                data.data?.trainee_id ||
-                data.trainee_id ||
-                'REM-0000';
+                data.data?.trainee_id || 'REM-0000';
 
             let seconds = 3;
 
             countdownDisplay.textContent = seconds;
 
-            if (timer) clearInterval(timer);
+            if (timer) {
+                clearInterval(timer);
+            }
 
-            timer = setInterval(function() {
+            timer = setInterval(function () {
 
                 seconds--;
 
@@ -372,6 +393,7 @@ form.addEventListener('submit', async function(event) {
                 if (seconds <= 0) {
 
                     clearInterval(timer);
+
                     window.location.href = 'login.html';
                 }
 
@@ -381,9 +403,11 @@ form.addEventListener('submit', async function(event) {
 
             showError(
                 '❌ ' +
-                (data.error ||
-                 data.message ||
-                 'Registration failed')
+                (
+                    data.error ||
+                    data.message ||
+                    'Registration failed'
+                )
             );
 
             setLoading(false);
@@ -391,11 +415,10 @@ form.addEventListener('submit', async function(event) {
 
     } catch (error) {
 
-        console.error(error);
+        console.error('Registration error:', error);
 
         showError(
-            '🌐 ' + error.message +
-            ' | API connection failed'
+            '🌐 Failed to connect to registration server. Please try again.'
         );
 
         setLoading(false);
@@ -403,5 +426,13 @@ form.addEventListener('submit', async function(event) {
 
 });
 
-console.log('REMADEF registration loaded');
-console.log('API:', API_URL);
+// ============================================================
+// INITIALIZATION
+// ============================================================
+
+console.log('REMADEF Registration loaded');
+
+console.log(
+    'API:',
+    API_URL
+);
