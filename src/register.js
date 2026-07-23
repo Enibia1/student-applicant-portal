@@ -1,61 +1,54 @@
-// src/register.js - REMADEF Registration
-// 🔥 YOUR APPUTE FUNCTION URL
+// ============================================================
+// REMADEF REGISTRATION - MOBILE DIAGNOSTIC VERSION
+// ============================================================
+
 const API_URL = 'https://6a60f589000c366da0d3.sfo.appwrite.run';
 
 let currentMethod = 'email';
 let timer = null;
 
-// DOM Elements
+// DOM
 const form = document.getElementById('register-form');
 const emailInput = document.getElementById('email');
 const phoneInput = document.getElementById('phone');
 const passwordInput = document.getElementById('password');
 const confirmInput = document.getElementById('confirm-password');
+
 const errorDisplay = document.getElementById('error-message');
 const successBox = document.getElementById('success-box');
+
 const traineeIdDisplay = document.getElementById('trainee-id-display');
 const countdownDisplay = document.getElementById('countdown');
+
 const emailTab = document.getElementById('email-tab');
 const phoneTab = document.getElementById('phone-tab');
+
 const emailField = document.getElementById('email-field');
 const phoneField = document.getElementById('phone-field');
+
 const strengthBar = document.getElementById('strength-bar');
 const strengthText = document.getElementById('strength-text');
+
 const btnText = document.getElementById('btn-text');
 const btnSpinner = document.getElementById('btn-spinner');
 const submitBtn = document.querySelector('.submit-btn');
 
-// Requirements elements
 const reqLength = document.getElementById('req-length');
 const reqLower = document.getElementById('req-lower');
 const reqUpper = document.getElementById('req-upper');
 const reqNumber = document.getElementById('req-number');
 
 // ============================================================
-// HELPERS
+// UI
 // ============================================================
 
-function isValidEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function isValidPhone(phone) {
-    const clean = phone.replace(/\D/g, '');
-    return clean.length >= 10 && clean.length <= 11;
-}
-
-function normalizePhone(phone) {
-    let clean = phone.replace(/\D/g, '');
-    if (clean.startsWith('0')) return '+234' + clean.slice(1);
-    if (clean.startsWith('234') && !clean.startsWith('+')) return '+' + clean;
-    if (!clean.startsWith('+') && clean.length === 10) return '+234' + clean;
-    return clean;
-}
-
-function showError(msg) {
-    errorDisplay.textContent = msg;
+function showError(message) {
+    errorDisplay.textContent = message;
     errorDisplay.style.display = 'block';
-    successBox.style.display = 'none';
+
+    if (successBox) {
+        successBox.style.display = 'none';
+    }
 }
 
 function hideError() {
@@ -76,83 +69,121 @@ function setLoading(loading) {
 }
 
 // ============================================================
+// VALIDATION
+// ============================================================
+
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function isValidPhone(phone) {
+    const clean = phone.replace(/\D/g, '');
+    return clean.length >= 10 && clean.length <= 11;
+}
+
+function normalizePhone(phone) {
+    let clean = phone.replace(/\D/g, '');
+
+    if (clean.startsWith('0')) {
+        return '+234' + clean.substring(1);
+    }
+
+    if (clean.startsWith('234')) {
+        return '+' + clean;
+    }
+
+    if (clean.length === 10) {
+        return '+234' + clean;
+    }
+
+    return clean;
+}
+
+// ============================================================
 // PASSWORD STRENGTH
 // ============================================================
 
-passwordInput.addEventListener('input', function() {
-    const pwd = this.value;
-    let score = 0;
-    let checks = {
-        length: pwd.length >= 8,
-        lower: /[a-z]/.test(pwd),
-        upper: /[A-Z]/.test(pwd),
-        number: /\d/.test(pwd)
+passwordInput.addEventListener('input', function () {
+
+    const password = this.value;
+
+    const checks = {
+        length: password.length >= 8,
+        lower: /[a-z]/.test(password),
+        upper: /[A-Z]/.test(password),
+        number: /\d/.test(password)
     };
-    
-    function updateReq(el, met) {
-        if (met) {
-            el.className = 'met';
-            el.textContent = el.textContent.replace('🔴', '✅');
+
+    let score = 0;
+
+    function update(element, valid) {
+
+        if (!element) return;
+
+        if (valid) {
+            element.className = 'met';
+            element.textContent =
+                element.textContent.replace('🔴', '✅');
         } else {
-            el.className = '';
-            el.textContent = el.textContent.replace('✅', '🔴');
+            element.className = '';
+            element.textContent =
+                element.textContent.replace('✅', '🔴');
         }
     }
-    
-    updateReq(reqLength, checks.length);
-    updateReq(reqLower, checks.lower);
-    updateReq(reqUpper, checks.upper);
-    updateReq(reqNumber, checks.number);
-    
+
+    update(reqLength, checks.length);
+    update(reqLower, checks.lower);
+    update(reqUpper, checks.upper);
+    update(reqNumber, checks.number);
+
     if (checks.length) score++;
     if (checks.lower) score++;
     if (checks.upper) score++;
     if (checks.number) score++;
-    
-    const percent = (score / 4) * 100;
-    strengthBar.style.width = percent + '%';
-    
-    if (pwd.length === 0) {
+
+    strengthBar.style.width = (score / 4 * 100) + '%';
+
+    if (password.length === 0) {
         strengthBar.style.background = '#e8ecf1';
         strengthText.textContent = '';
-        return;
-    }
-    
-    if (score <= 1) {
+    } else if (score <= 1) {
         strengthBar.style.background = '#dc3545';
         strengthText.textContent = '🔴 Weak';
-        strengthText.style.color = '#dc3545';
-    } else if (score <= 2) {
+    } else if (score === 2) {
         strengthBar.style.background = '#ffc107';
         strengthText.textContent = '🟡 Medium';
-        strengthText.style.color = '#ffc107';
-    } else if (score <= 3) {
+    } else if (score === 3) {
         strengthBar.style.background = '#17a2b8';
         strengthText.textContent = '🔵 Good';
-        strengthText.style.color = '#17a2b8';
     } else {
         strengthBar.style.background = '#28a745';
         strengthText.textContent = '🟢 Strong';
-        strengthText.style.color = '#28a745';
     }
 });
 
 // ============================================================
-// METHOD SWITCHING
+// METHOD SWITCH
 // ============================================================
 
 window.switchMethod = function(method) {
+
     currentMethod = method;
+
     hideError();
-    
+
     if (method === 'email') {
+
         emailField.classList.remove('hidden');
         phoneField.classList.add('hidden');
+
         emailTab.classList.add('active');
         phoneTab.classList.remove('active');
+
     } else {
+
         emailField.classList.add('hidden');
         phoneField.classList.remove('hidden');
+
         phoneTab.classList.add('active');
         emailTab.classList.remove('active');
     }
@@ -163,19 +194,21 @@ window.switchMethod = function(method) {
 // ============================================================
 
 window.togglePassword = function(fieldId) {
+
     const input = document.getElementById(fieldId);
-    const btn = input.parentElement.querySelector('.password-toggle');
+    const button = input.parentElement.querySelector('.password-toggle');
+
     if (input.type === 'password') {
         input.type = 'text';
-        btn.textContent = '🙈';
+        button.textContent = '🙈';
     } else {
         input.type = 'password';
-        btn.textContent = '👁️';
+        button.textContent = '👁️';
     }
 };
 
 // ============================================================
-// LOGIN REDIRECT
+// LOGIN
 // ============================================================
 
 window.goToLogin = function() {
@@ -183,88 +216,192 @@ window.goToLogin = function() {
 };
 
 // ============================================================
-// FORM SUBMIT
+// REGISTRATION
 // ============================================================
 
-form.addEventListener('submit', async function(e) {
-    e.preventDefault();
+form.addEventListener('submit', async function(event) {
+
+    event.preventDefault();
+
     hideError();
-    
+
     let email = emailInput.value.trim();
     let phone = phoneInput.value.trim();
+
     const password = passwordInput.value;
     const confirmPassword = confirmInput.value;
-    
-    // Validate
+
+    // CONTACT VALIDATION
     if (currentMethod === 'email') {
-        if (!email) return showError('📧 Email is required');
-        if (!isValidEmail(email)) return showError('📧 Invalid email address');
+
+        if (!email) {
+            showError('📧 Email is required');
+            return;
+        }
+
+        if (!isValidEmail(email)) {
+            showError('📧 Invalid email address');
+            return;
+        }
+
         phone = '';
+
     } else {
-        if (!phone) return showError('📱 Phone number is required');
-        if (!isValidPhone(phone)) return showError('📱 Invalid phone number');
-        email = '';
+
+        if (!phone) {
+            showError('📱 Phone number is required');
+            return;
+        }
+
+        if (!isValidPhone(phone)) {
+            showError('📱 Invalid phone number');
+            return;
+        }
+
         phone = normalizePhone(phone);
+        email = '';
     }
-    
-    if (!password) return showError('🔑 Password is required');
-    if (password.length < 8) return showError('🔑 Password must be 8+ characters');
-    if (!/[a-z]/.test(password)) return showError('🔑 Need a lowercase letter');
-    if (!/[A-Z]/.test(password)) return showError('🔑 Need an uppercase letter');
-    if (!/\d/.test(password)) return showError('🔑 Need a number');
-    if (password !== confirmPassword) return showError('🔑 Passwords do not match');
-    
+
+    // PASSWORD VALIDATION
+    if (!password) {
+        showError('🔑 Password is required');
+        return;
+    }
+
+    if (password.length < 8) {
+        showError('🔑 Password must be 8+ characters');
+        return;
+    }
+
+    if (!/[a-z]/.test(password)) {
+        showError('🔑 Need a lowercase letter');
+        return;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+        showError('🔑 Need an uppercase letter');
+        return;
+    }
+
+    if (!/\d/.test(password)) {
+        showError('🔑 Need a number');
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        showError('🔑 Passwords do not match');
+        return;
+    }
+
     setLoading(true);
-    
+
+    const payload = {
+        method: currentMethod,
+        password: password
+    };
+
+    if (email) payload.email = email;
+    if (phone) payload.phone = phone;
+
     try {
-        const payload = { method: currentMethod, password };
-        if (email) payload.email = email;
-        if (phone) payload.phone = phone;
-        
-        console.log('📤 Sending to:', API_URL);
-        console.log('📦 Payload:', payload);
-        
+
         const response = await fetch(API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+
             body: JSON.stringify(payload)
         });
-        
-        console.log('📥 Response status:', response.status);
-        
-        const data = await response.json();
-        console.log('📦 Response data:', data);
-        
+
+        const responseText = await response.text();
+
+        let data;
+
+        try {
+            data = JSON.parse(responseText);
+        } catch (error) {
+
+            showError(
+                '⚠️ Server response error. HTTP Status: ' +
+                response.status
+            );
+
+            setLoading(false);
+            return;
+        }
+
+        if (!response.ok) {
+
+            showError(
+                '❌ ' +
+                (data.error ||
+                 data.message ||
+                 'Registration failed') +
+                ' (' + response.status + ')'
+            );
+
+            setLoading(false);
+            return;
+        }
+
         if (data.success) {
+
             form.style.display = 'none';
             successBox.style.display = 'block';
-            traineeIdDisplay.textContent = data.data?.trainee_id || 'REM-0000';
-            
+
+            traineeIdDisplay.textContent =
+                data.data?.trainee_id ||
+                data.trainee_id ||
+                'REM-0000';
+
             let seconds = 3;
+
             countdownDisplay.textContent = seconds;
+
             if (timer) clearInterval(timer);
-            timer = setInterval(() => {
+
+            timer = setInterval(function() {
+
                 seconds--;
+
                 countdownDisplay.textContent = seconds;
+
                 if (seconds <= 0) {
+
                     clearInterval(timer);
                     window.location.href = 'login.html';
                 }
+
             }, 1000);
+
         } else {
-            showError(`❌ ${data.error || 'Registration failed'}`);
+
+            showError(
+                '❌ ' +
+                (data.error ||
+                 data.message ||
+                 'Registration failed')
+            );
+
             setLoading(false);
         }
+
     } catch (error) {
-        console.error('❌ Error:', error);
-        showError(`🌐 ${error.message || 'Network error - check console'}`);
+
+        console.error(error);
+
+        showError(
+            '🌐 ' + error.message +
+            ' | API connection failed'
+        );
+
         setLoading(false);
     }
+
 });
 
-// ============================================================
-// INIT
-// ============================================================
-
-console.log('✅ REMADEF Registration loaded');
-console.log('📍 API URL:', API_URL);
+console.log('REMADEF registration loaded');
+console.log('API:', API_URL);
