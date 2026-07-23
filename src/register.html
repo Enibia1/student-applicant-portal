@@ -1,4 +1,4 @@
-<!-- src/register.html - REMADEF Registration Page -->
+<!-- src/register.html - REMADEF Fast Registration -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,43 +19,49 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 16px;
         }
 
         .container {
             background: white;
-            border-radius: 20px;
-            padding: 40px 30px;
-            max-width: 440px;
+            border-radius: 24px;
+            padding: 32px 24px;
+            max-width: 400px;
             width: 100%;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .logo {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
         }
 
         .logo h1 {
             font-size: 28px;
-            font-weight: 700;
+            font-weight: 800;
             background: linear-gradient(135deg, #667eea, #764ba2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
         .logo p {
-            color: #666;
-            font-size: 14px;
-            margin-top: 5px;
+            color: #888;
+            font-size: 13px;
+            margin-top: 4px;
         }
 
         .method-toggle {
             display: flex;
             background: #f0f2f5;
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 4px;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
 
         .method-toggle button {
@@ -63,52 +69,61 @@
             padding: 10px;
             border: none;
             background: transparent;
-            border-radius: 10px;
-            font-size: 15px;
+            border-radius: 11px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
-            color: #666;
+            transition: all 0.3s ease;
+            color: #888;
         }
 
         .method-toggle button.active {
             background: white;
             color: #667eea;
-            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.2);
+            box-shadow: 0 2px 12px rgba(102, 126, 234, 0.25);
         }
 
-        .method-toggle button:hover {
-            color: #667eea;
+        .method-toggle button:active {
+            transform: scale(0.96);
         }
 
         .field-group {
-            margin-bottom: 18px;
+            margin-bottom: 14px;
         }
 
         .field-group label {
             display: block;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             color: #333;
-            margin-bottom: 6px;
+            margin-bottom: 5px;
         }
 
         .field-group input {
             width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
+            padding: 12px 14px;
+            border: 2px solid #e8ecf1;
+            border-radius: 12px;
             font-size: 15px;
-            transition: border-color 0.3s;
+            transition: all 0.3s ease;
             outline: none;
+            background: #fafbfc;
         }
 
         .field-group input:focus {
             border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
         }
 
         .field-group input.input-error {
             border-color: #dc3545;
+            background: #fff5f5;
+        }
+
+        .field-group input.input-success {
+            border-color: #28a745;
+            background: #f5fff5;
         }
 
         .phone-input {
@@ -118,29 +133,29 @@
 
         .phone-input .country-code {
             background: #f0f2f5;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
+            padding: 12px 14px;
+            border: 2px solid #e8ecf1;
             border-right: none;
-            border-radius: 10px 0 0 10px;
+            border-radius: 12px 0 0 12px;
             font-weight: 600;
             color: #333;
+            font-size: 14px;
         }
 
         .phone-input input {
-            border-radius: 0 10px 10px 0;
+            border-radius: 0 12px 12px 0;
             border-left: none;
+        }
+
+        .phone-input input:focus + .country-code {
+            border-color: #667eea;
         }
 
         .field-error {
             color: #dc3545;
-            font-size: 13px;
-            margin-top: 5px;
-        }
-
-        .password-strength {
-            font-size: 13px;
-            margin-top: 5px;
-            display: none;
+            font-size: 12px;
+            margin-top: 4px;
+            min-height: 18px;
         }
 
         .password-wrapper {
@@ -158,13 +173,58 @@
             transform: translateY(-50%);
             background: none;
             border: none;
-            font-size: 20px;
+            font-size: 18px;
             cursor: pointer;
-            opacity: 0.6;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+            padding: 4px;
         }
 
         .password-toggle:hover {
             opacity: 1;
+        }
+
+        .password-strength {
+            margin-top: 6px;
+            height: 4px;
+            border-radius: 4px;
+            background: #e8ecf1;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .password-strength-bar {
+            height: 100%;
+            width: 0%;
+            border-radius: 4px;
+            transition: width 0.4s ease, background 0.4s ease;
+        }
+
+        .password-strength-text {
+            font-size: 12px;
+            margin-top: 4px;
+            min-height: 18px;
+            font-weight: 500;
+        }
+
+        .password-requirements {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 6px;
+            font-size: 11px;
+            color: #999;
+        }
+
+        .password-requirements span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .password-requirements .met {
+            color: #28a745;
         }
 
         .submit-btn {
@@ -173,17 +233,18 @@
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             border: none;
-            border-radius: 12px;
+            border-radius: 14px;
             font-size: 16px;
             font-weight: 700;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            margin-top: 10px;
+            transition: all 0.3s ease;
+            margin-top: 6px;
+            position: relative;
+            overflow: hidden;
         }
 
-        .submit-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        .submit-btn:active {
+            transform: scale(0.97);
         }
 
         .submit-btn:disabled {
@@ -192,50 +253,108 @@
             transform: none;
         }
 
+        .submit-btn .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         .error-message {
             display: none;
             color: #dc3545;
             background: #f8d7da;
             border: 1px solid #f5c6cb;
-            padding: 10px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            font-size: 14px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            margin-bottom: 14px;
+            font-size: 13px;
+            animation: shake 0.4s ease;
         }
 
-        .success-message {
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+
+        .success-box {
             display: none;
-            color: #155724;
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            padding: 10px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            font-size: 14px;
-        }
-
-        .login-redirect {
             text-align: center;
-            margin-top: 18px;
-            font-size: 14px;
-            color: #666;
+            padding: 20px 0;
+            animation: popIn 0.5s ease;
         }
 
-        .login-redirect a {
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .success-box .icon {
+            font-size: 56px;
+            margin-bottom: 8px;
+        }
+
+        .success-box h2 {
+            color: #28a745;
+            font-size: 22px;
+            margin-bottom: 6px;
+        }
+
+        .success-box p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .success-box .trainee-id {
+            background: linear-gradient(135deg, #f0f2f5, #e8ecf1);
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 800;
+            color: #667eea;
+            font-size: 26px;
+            letter-spacing: 1px;
+            margin: 12px 0;
+        }
+
+        .success-box .redirect-timer {
+            color: #999;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+            color: #888;
+        }
+
+        .login-link a {
             color: #667eea;
             font-weight: 600;
             text-decoration: none;
+            transition: color 0.3s;
         }
 
-        .login-redirect a:hover {
+        .login-link a:hover {
             text-decoration: underline;
+            color: #764ba2;
         }
 
         .terms {
             text-align: center;
-            font-size: 12px;
-            color: #999;
-            margin-top: 20px;
+            font-size: 11px;
+            color: #bbb;
+            margin-top: 16px;
         }
 
         .terms a {
@@ -247,47 +366,9 @@
             display: none !important;
         }
 
-        /* Success state overlay */
-        .success-overlay {
-            display: none;
-            text-align: center;
-            padding: 20px 0;
-        }
-
-        .success-overlay .checkmark {
-            font-size: 60px;
-            margin-bottom: 15px;
-        }
-
-        .success-overlay h2 {
-            color: #28a745;
-            margin-bottom: 10px;
-        }
-
-        .success-overlay p {
-            color: #666;
-            margin-bottom: 5px;
-        }
-
-        .success-overlay .trainee-id {
-            background: #f0f2f5;
-            padding: 10px;
-            border-radius: 8px;
-            font-weight: 700;
-            color: #667eea;
-            margin: 15px 0;
-            font-size: 20px;
-        }
-
-        .redirect-timer {
-            color: #999;
-            font-size: 13px;
-            margin-top: 15px;
-        }
-
         @media (max-width: 480px) {
             .container {
-                padding: 25px 18px;
+                padding: 24px 16px;
             }
             .logo h1 {
                 font-size: 24px;
@@ -300,15 +381,14 @@
         <!-- Logo -->
         <div class="logo">
             <h1>🚀 REMADEF</h1>
-            <p>Create your account to get started</p>
+            <p>Create your account</p>
         </div>
 
-        <!-- Error & Success Messages -->
+        <!-- Error Message -->
         <div id="error-message" class="error-message"></div>
-        <div id="success-message" class="success-message"></div>
 
         <!-- Registration Form -->
-        <form id="register-form">
+        <form id="register-form" autocomplete="off">
             <!-- Method Toggle -->
             <div class="method-toggle">
                 <button type="button" id="email-tab" class="active" onclick="switchMethod('email')">
@@ -334,7 +414,7 @@
                     <input type="tel" id="phone" placeholder="8037537614" />
                 </div>
                 <div id="phone-error" class="field-error"></div>
-                <small style="color:#999; font-size:12px;">Enter 10-digit number (e.g., 8037537614)</small>
+                <small style="color:#bbb; font-size:11px;">10 digits (e.g., 8037537614)</small>
             </div>
 
             <!-- Password -->
@@ -344,7 +424,16 @@
                     <input type="password" id="password" placeholder="Create a strong password" />
                     <button type="button" class="password-toggle" onclick="togglePassword('password')">👁️</button>
                 </div>
-                <div id="password-strength" class="password-strength"></div>
+                <div class="password-strength">
+                    <div class="password-strength-bar" id="strength-bar"></div>
+                </div>
+                <div class="password-strength-text" id="strength-text"></div>
+                <div class="password-requirements" id="requirements">
+                    <span id="req-length">🔴 8+ chars</span>
+                    <span id="req-lower">🔴 Lowercase</span>
+                    <span id="req-upper">🔴 Uppercase</span>
+                    <span id="req-number">🔴 Number</span>
+                </div>
             </div>
 
             <!-- Confirm Password -->
@@ -356,31 +445,31 @@
                 </div>
             </div>
 
-            <!-- Submit Button -->
-            <button type="submit" class="submit-btn">🚀 Create Account</button>
+            <button type="submit" class="submit-btn">
+                <span id="btn-text">🚀 Create Account</span>
+                <div class="spinner" id="btn-spinner"></div>
+            </button>
         </form>
 
-        <!-- Success Overlay (shown after registration) -->
-        <div id="success-overlay" class="success-overlay">
-            <div class="checkmark">✅</div>
+        <!-- Success Box -->
+        <div id="success-box" class="success-box">
+            <div class="icon">🎉</div>
             <h2>Account Created!</h2>
-            <p>Your trainee ID:</p>
+            <p>Your Trainee ID:</p>
             <div class="trainee-id" id="trainee-id-display">REM-0000</div>
-            <p style="font-size:13px; color:#666;">
-                We're setting up your profile...
-            </p>
+            <p style="font-size:13px; color:#888;">Welcome to REMADEF 🚀</p>
             <div class="redirect-timer">
-                Redirecting to login in <span id="countdown">3</span> seconds...
+                Redirecting to login in <span id="countdown">3</span>s
             </div>
         </div>
 
-        <!-- Login Redirect -->
-        <div id="login-redirect" class="login-redirect">
-            Already have an account? <a href="#" onclick="goToLogin()">Login here</a>
+        <!-- Login Link -->
+        <div class="login-link">
+            Already a member? <a href="#" onclick="goToLogin()">Login here</a>
         </div>
 
         <div class="terms">
-            By creating an account, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+            By continuing, you agree to our <a href="#">Terms</a> &amp; <a href="#">Privacy Policy</a>
         </div>
     </div>
 
