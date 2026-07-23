@@ -1,4 +1,4 @@
-# src/main.py - REMADEF Registration (FIXED for Appwrite SDK v22+)
+# src/main.py - REMADEF Registration (FIXED - With Project ID)
 from appwrite.client import Client
 from appwrite.services.users import Users
 from appwrite.exception import AppwriteException
@@ -125,7 +125,7 @@ def main(context):
             }, 400, cors_headers)
         
         # ============================================================
-        # INITIALIZE APPUTE - Using Scopes
+        # INITIALIZE APPUTE - With Project ID
         # ============================================================
         
         try:
@@ -139,8 +139,21 @@ def main(context):
                     'error': 'Server configuration error: Missing API key'
                 }, 500, cors_headers)
             
+            # Project ID - from environment variable
+            project_id = context.env.get('APPWRITE_PROJECT_ID')
+            
+            if not project_id:
+                context.error("❌ No Project ID found")
+                return context.res.json({
+                    'success': False,
+                    'error': 'Server configuration error: Missing Project ID'
+                }, 500, cors_headers)
+            
+            context.log(f"🔑 Project ID: {project_id[:10]}...")
+            
             client = Client()
             client.set_endpoint('https://cloud.appwrite.io/v1')
+            client.set_project(project_id)  # IMPORTANT: Must set Project ID!
             client.set_key(api_key)
             users = Users(client)
             
@@ -153,11 +166,10 @@ def main(context):
             }, 500, cors_headers)
         
         # ============================================================
-        # CHECK DUPLICATES - FIXED!
+        # CHECK DUPLICATES
         # ============================================================
         
         try:
-            # Use queries instead of limit
             if email:
                 response = users.list(queries=[Query.equal('email', email)])
                 if len(response.get('users', [])) > 0:
@@ -176,15 +188,15 @@ def main(context):
                     
         except Exception as e:
             context.error(f"⚠️ Duplicate check warning: {str(e)}")
-            # Continue anyway - the Appwrite error will catch duplicates
+            # Continue anyway
         
         # ============================================================
-        # CREATE USER - FIXED!
+        # CREATE USER
         # ============================================================
         
         try:
             user_data = {
-                'user_id': 'unique()',  # Changed from userId to user_id
+                'user_id': 'unique()',
                 'password': password,
                 'name': 'Remora Trainee'
             }
