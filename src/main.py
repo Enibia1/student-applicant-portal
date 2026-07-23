@@ -1,11 +1,10 @@
-# src/main.py - REMADEF Registration (FIXED - Using os.environ)
+# src/main.py - REMADEF Registration (Using Scopes - NO API KEY needed!)
 from appwrite.client import Client
 from appwrite.services.users import Users
 from appwrite.exception import AppwriteException
 import re
 import random
 import json
-import os
 
 def main(context):
     # ============================================================
@@ -125,33 +124,26 @@ def main(context):
             }, 400, cors_headers)
         
         # ============================================================
-        # GET CREDENTIALS - FIXED using os.environ
-        # ============================================================
-        
-        project_id = os.environ.get('APPWRITE_PROJECT_ID')
-        api_key = os.environ.get('APPWRITE_API_KEY')
-        
-        context.log(f"🔑 Project ID: {project_id[:10] if project_id else 'None'}...")
-        
-        if not project_id or not api_key:
-            context.error("❌ Missing environment variables")
-            return context.res.json({
-                'success': False,
-                'error': 'Server configuration error: Missing credentials'
-            }, 500, cors_headers)
-        
-        # ============================================================
-        # INITIALIZE APPUTE
+        # INITIALIZE APPUTE - Using Scopes (NO API KEY needed!)
         # ============================================================
         
         try:
+            # Get the dynamic key from the request headers
+            api_key = context.req.headers.get('x-appwrite-key')
+            
+            if not api_key:
+                context.error("❌ No API key in request")
+                return context.res.json({
+                    'success': False,
+                    'error': 'Server configuration error: Missing API key'
+                }, 500, cors_headers)
+            
             client = Client()
             client.set_endpoint('https://cloud.appwrite.io/v1')
-            client.set_project(project_id)
             client.set_key(api_key)
             users = Users(client)
             
-            context.log("✅ Appwrite client initialized")
+            context.log("✅ Appwrite client initialized (using Scopes)")
         except Exception as e:
             context.error(f"❌ Appwrite init failed: {str(e)}")
             return context.res.json({
