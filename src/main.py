@@ -21,7 +21,7 @@ def main(context):
     }
 
     # ============================================================
-    # HANDLE CORS PREFLIGHT
+    # CORS PREFLIGHT
     # ============================================================
 
     if context.req.method == "OPTIONS":
@@ -36,7 +36,7 @@ def main(context):
         )
 
     # ============================================================
-    # ONLY POST IS ALLOWED
+    # ONLY POST REQUESTS
     # ============================================================
 
     if context.req.method != "POST":
@@ -166,7 +166,7 @@ def main(context):
         # PHONE REGISTRATION
         # ========================================================
 
-        elif method == "phone":
+        else:
 
             if not phone:
 
@@ -243,7 +243,7 @@ def main(context):
             )
 
         # ========================================================
-        # GET APPWRITE DYNAMIC FUNCTION API KEY
+        # APPWRITE API KEY
         # ========================================================
 
         api_key = context.req.headers.get(
@@ -266,7 +266,7 @@ def main(context):
             )
 
         # ========================================================
-        # GET PROJECT ID
+        # PROJECT ID
         # ========================================================
 
         project_id = os.environ.get(
@@ -293,9 +293,6 @@ def main(context):
         # ========================================================
 
         client = Client()
-
-        # IMPORTANT:
-        # This project is hosted in the San Francisco region.
 
         client.set_endpoint(
             "https://sfo.cloud.appwrite.io/v1"
@@ -354,6 +351,36 @@ def main(context):
             )
 
             # ====================================================
+            # IMPORTANT:
+            # Appwrite Python SDK returns a User object.
+            # It is NOT a dictionary.
+            # ====================================================
+
+            appwrite_user_id = getattr(
+                new_user,
+                "id",
+                None
+            )
+
+            appwrite_email = getattr(
+                new_user,
+                "email",
+                None
+            )
+
+            appwrite_phone = getattr(
+                new_user,
+                "phone",
+                None
+            )
+
+            appwrite_name = getattr(
+                new_user,
+                "name",
+                None
+            )
+
+            # ====================================================
             # GENERATE REMADEF TRAINEE ID
             # ====================================================
 
@@ -376,16 +403,20 @@ def main(context):
                     "success": True,
                     "message": "Account created successfully!",
                     "data": {
-                        "user_id": new_user.get("$id"),
-                        "email": new_user.get("email"),
-                        "phone": new_user.get("phone"),
-                        "name": new_user.get("name"),
+                        "user_id": appwrite_user_id,
+                        "email": appwrite_email,
+                        "phone": appwrite_phone,
+                        "name": appwrite_name,
                         "trainee_id": trainee_id
                     }
                 },
                 201,
                 cors_headers
             )
+
+        # ========================================================
+        # APPWRITE API ERROR
+        # ========================================================
 
         except AppwriteException as e:
 
@@ -440,6 +471,10 @@ def main(context):
                 cors_headers
             )
 
+        # ========================================================
+        # GENERAL CREATION ERROR
+        # ========================================================
+
         except Exception as e:
 
             context.error(
@@ -456,6 +491,10 @@ def main(context):
                 500,
                 cors_headers
             )
+
+    # ============================================================
+    # GLOBAL ERROR HANDLER
+    # ============================================================
 
     except Exception as e:
 
