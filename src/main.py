@@ -1,12 +1,10 @@
-# src/main.py - REMADEF Registration (FINAL FIXED)
+# src/main.py - REMADEF Registration (SIMPLIFIED)
 from appwrite.client import Client
 from appwrite.services.users import Users
 from appwrite.exception import AppwriteException
-from appwrite.query import Query
 import re
 import random
 import json
-import os
 
 def main(context):
     # ============================================================
@@ -31,38 +29,43 @@ def main(context):
         # GET REQUEST BODY
         # ============================================================
         
+        # Get raw body
         body = context.req.body
+        
+        # If no body, return error
         if not body:
             return context.res.json({
                 'success': False,
                 'error': 'Missing request body'
             }, 400, cors_headers)
         
+        # Parse JSON
         try:
             data = json.loads(body)
-        except json.JSONDecodeError:
+        except:
             return context.res.json({
                 'success': False,
-                'error': 'Invalid JSON payload'
+                'error': 'Invalid JSON'
             }, 400, cors_headers)
         
-        context.log(f"📝 Received: {json.dumps(data)}")
-        
+        # Get fields
         method = data.get('method', 'email')
+        email = data.get('email', '').strip()
+        phone = data.get('phone', '').strip()
         password = data.get('password', '')
-        email = data.get('email', '').strip() or None
-        phone = data.get('phone', '').strip() or None
         
         # ============================================================
         # VALIDATION
         # ============================================================
         
+        # Check method
         if method not in ['email', 'phone']:
             return context.res.json({
                 'success': False,
-                'error': 'Invalid method. Use "email" or "phone"'
+                'error': 'Invalid method'
             }, 400, cors_headers)
         
+        # Check email
         if method == 'email':
             if not email:
                 return context.res.json({
@@ -72,33 +75,30 @@ def main(context):
             if not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
                 return context.res.json({
                     'success': False,
-                    'error': 'Invalid email format'
+                    'error': 'Invalid email'
                 }, 400, cors_headers)
             phone = None
-        
-        if method == 'phone':
+        else:
+            # Check phone
             if not phone:
                 return context.res.json({
                     'success': False,
                     'error': 'Phone is required'
                 }, 400, cors_headers)
-            
+            # Clean phone
             clean = re.sub(r'\D', '', phone)
-            if clean.startswith('0') and len(clean) == 11:
-                phone = '+234' + clean[1:]
-            elif len(clean) == 10:
+            if len(clean) == 10:
                 phone = '+234' + clean
-            elif clean.startswith('234') and len(clean) == 13:
-                phone = '+' + clean
-            elif clean.startswith('+234') and len(clean) == 14:
-                phone = clean
+            elif len(clean) == 11 and clean.startswith('0'):
+                phone = '+234' + clean[1:]
             else:
                 return context.res.json({
                     'success': False,
-                    'error': 'Invalid phone number. Use 08012345678'
+                    'error': 'Invalid phone number'
                 }, 400, cors_headers)
             email = None
         
+        # Check password
         if not password:
             return context.res.json({
                 'success': False,
@@ -107,99 +107,35 @@ def main(context):
         if len(password) < 8:
             return context.res.json({
                 'success': False,
-                'error': 'Password must be at least 8 characters'
+                'error': 'Password must be 8+ characters'
             }, 400, cors_headers)
-        if not re.search(r'[a-z]', password):
-            return context.res.json({
-                'success': False,
-                'error': 'Password needs a lowercase letter'
-            }, 400, cors_headers)
-        if not re.search(r'[A-Z]', password):
-            return context.res.json({
-                'success': False,
-                'error': 'Password needs an uppercase letter'
-            }, 400, cors_headers)
-        if not re.search(r'\d', password):
-            return context.res.json({
-                'success': False,
-                'error': 'Password needs a number'
-            }, 400, cors_headers)
-        
-        # ============================================================
-        # GET CREDENTIALS - USING HARDCODED PROJECT ID
-        # ============================================================
-        
-        # Get API key from request headers (Scopes)
-        api_key = context.req.headers.get('x-appwrite-key')
-        
-        if not api_key:
-            context.error("❌ No API key in request")
-            return context.res.json({
-                'success': False,
-                'error': 'Server configuration error: Missing API key. Make sure Scopes are added.'
-            }, 500, cors_headers)
-        
-        # Use hardcoded Project ID (since env variables are tricky)
-        project_id = "6a5bc178003a2529271e"
-        
-        context.log(f"🔑 Using Project ID: {project_id}")
         
         # ============================================================
         # INITIALIZE APPUTE
         # ============================================================
         
-        try:
-            client = Client()
-            client.set_endpoint('https://cloud.appwrite.io/v1')
-            client.set_project(project_id)
-            client.set_key(api_key)
-            users = Users(client)
-            
-            context.log("✅ Appwrite client initialized successfully!")
-        except Exception as e:
-            context.error(f"❌ Appwrite init failed: {str(e)}")
+        # Get API key from request (Scopes)
+        api_key = context.req.headers.get('x-appwrite-key')
+        
+        if not api_key:
             return context.res.json({
                 'success': False,
-                'error': f'Server configuration error: {str(e)}'
+                'error': 'Missing API key - add Scopes'
             }, 500, cors_headers)
         
-        # ============================================================
-        # CHECK DUPLICATES
-        # ============================================================
-        
-        try:
-            # Try to check for existing users
-            if email:
-                try:
-                    response = users.list(queries=[Query.equal('email', email)])
-                    if response and len(response.get('users', [])) > 0:
-                        return context.res.json({
-                            'success': False,
-                            'error': 'This email is already registered'
-                        }, 409, cors_headers)
-                except:
-                    pass  # Skip duplicate check if it fails
-            
-            if phone:
-                try:
-                    response = users.list(queries=[Query.equal('phone', phone)])
-                    if response and len(response.get('users', [])) > 0:
-                        return context.res.json({
-                            'success': False,
-                            'error': 'This phone number is already registered'
-                        }, 409, cors_headers)
-                except:
-                    pass  # Skip duplicate check if it fails
-                    
-        except Exception as e:
-            context.log(f"⚠️ Duplicate check skipped: {str(e)}")
-            # Continue anyway - Appwrite will catch duplicates
+        # Initialize client
+        client = Client()
+        client.set_endpoint('https://cloud.appwrite.io/v1')
+        client.set_project('6a5bc178003a2529271e')  # Your Project ID
+        client.set_key(api_key)
+        users = Users(client)
         
         # ============================================================
         # CREATE USER
         # ============================================================
         
         try:
+            # Prepare user data
             user_data = {
                 'user_id': 'unique()',
                 'password': password,
@@ -210,14 +146,13 @@ def main(context):
             if phone:
                 user_data['phone'] = phone
             
-            context.log(f"📝 Creating user with: email={email}, phone={phone}")
-            
+            # Create user
             new_user = users.create(**user_data)
             
-            context.log(f"✅ User created: {new_user.get('$id')}")
-            
+            # Generate trainee ID
             trainee_id = f"REM-{str(random.randint(1, 9999)).zfill(4)}"
             
+            # Return success
             return context.res.json({
                 'success': True,
                 'message': 'Account created successfully!',
@@ -232,33 +167,30 @@ def main(context):
             
         except AppwriteException as e:
             error_msg = str(e).lower()
-            context.error(f"❌ Appwrite error: {error_msg}")
             
             if 'email already exists' in error_msg:
                 return context.res.json({
                     'success': False,
-                    'error': 'This email is already registered. Please login.'
+                    'error': 'This email is already registered'
                 }, 409, cors_headers)
             elif 'phone already exists' in error_msg:
                 return context.res.json({
                     'success': False,
-                    'error': 'This phone number is already registered. Please login.'
+                    'error': 'This phone number is already registered'
                 }, 409, cors_headers)
             else:
                 return context.res.json({
                     'success': False,
                     'error': f'Registration failed: {str(e)}'
                 }, 500, cors_headers)
-        
+                
         except Exception as e:
-            context.error(f"❌ Unexpected error: {str(e)}")
             return context.res.json({
                 'success': False,
-                'error': f'Unexpected error: {str(e)}'
+                'error': f'Error: {str(e)}'
             }, 500, cors_headers)
             
     except Exception as e:
-        context.error(f"❌ Top-level error: {str(e)}")
         return context.res.json({
             'success': False,
             'error': f'Server error: {str(e)}'
