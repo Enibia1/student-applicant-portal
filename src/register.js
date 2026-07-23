@@ -1,12 +1,15 @@
 // src/register.js - REMADEF Registration Logic
-// Complete production-ready version
+// Updated: Removed full name, auto-redirect to login
 
 // ============================================================
-// CONFIGURATION
+// CONFIGURATION - PUT YOUR ACTUAL URL HERE!
 // ============================================================
 
-const API_URL = 'https://6a60f589000c366da0d3.sfo.appwrite.run';
+// 🔥 IMPORTANT: Replace this with YOUR Appwrite function URL
+const API_URL = 'https://6a60f589000c366da0d3.sfo.appwrite.run'; // <-- CHANGE THIS!
+
 let currentMethod = 'email';
+let redirectTimer = null;
 
 // ============================================================
 // DOM ELEMENTS
@@ -17,9 +20,11 @@ const emailInput = document.getElementById('email');
 const phoneInput = document.getElementById('phone');
 const passwordInput = document.getElementById('password');
 const confirmInput = document.getElementById('confirm-password');
-const fullNameInput = document.getElementById('full-name');
 const errorDisplay = document.getElementById('error-message');
 const successDisplay = document.getElementById('success-message');
+const successOverlay = document.getElementById('success-overlay');
+const traineeIdDisplay = document.getElementById('trainee-id-display');
+const countdownDisplay = document.getElementById('countdown');
 const emailTab = document.getElementById('email-tab');
 const phoneTab = document.getElementById('phone-tab');
 const emailField = document.getElementById('email-field');
@@ -55,6 +60,7 @@ function showError(message) {
     errorDisplay.textContent = message;
     errorDisplay.style.display = 'block';
     successDisplay.style.display = 'none';
+    successOverlay.style.display = 'none';
 }
 
 function showSuccess(message) {
@@ -69,6 +75,19 @@ function clearErrors() {
     document.querySelectorAll('.field-error').forEach(el => el.textContent = '');
     document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
 }
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+
+window.goToLogin = function() {
+    // Redirect to login page (create login.html later)
+    // For now, show a message
+    alert('Login page coming soon! 🚀\n\nFor now, you can login at:\nhttps://cloud.appwrite.io/console');
+    
+    // When login.html is created, use:
+    // window.location.href = 'login.html';
+};
 
 // ============================================================
 // METHOD SWITCHING
@@ -145,54 +164,6 @@ passwordInput.addEventListener('input', function() {
 });
 
 // ============================================================
-// REAL-TIME DUPLICATE CHECK
-// ============================================================
-
-async function checkDuplicate(field, value) {
-    if (!value || value.length < 3) return;
-    
-    try {
-        const response = await fetch(`${API_URL}/check-user`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ [field]: value })
-        });
-        const data = await response.json();
-        
-        const errorEl = document.getElementById(`${field}-error`);
-        const input = document.getElementById(field);
-        
-        if (data.exists) {
-            input.classList.add('input-error');
-            if (errorEl) {
-                errorEl.textContent = `This ${field} is already registered. Please login.`;
-            }
-            loginRedirect.style.display = 'block';
-        } else {
-            input.classList.remove('input-error');
-            if (errorEl) {
-                errorEl.textContent = '';
-            }
-            loginRedirect.style.display = 'none';
-        }
-    } catch (error) {
-        console.error('Duplicate check failed:', error);
-    }
-}
-
-emailInput.addEventListener('blur', function() {
-    if (currentMethod === 'email' && this.value.trim()) {
-        checkDuplicate('email', this.value.trim());
-    }
-});
-
-phoneInput.addEventListener('blur', function() {
-    if (currentMethod === 'phone' && this.value.trim()) {
-        checkDuplicate('phone', normalizePhone(this.value.trim()));
-    }
-});
-
-// ============================================================
 // FORM SUBMISSION
 // ============================================================
 
@@ -204,7 +175,9 @@ registerForm.addEventListener('submit', async function(e) {
     let phone = phoneInput.value.trim();
     const password = passwordInput.value;
     const confirmPassword = confirmInput.value;
-    const fullName = fullNameInput.value.trim();
+    
+    console.log('📝 Starting registration...');
+    console.log('API URL:', API_URL);
     
     // 1. Validate method
     if (currentMethod === 'email') {
@@ -262,70 +235,110 @@ registerForm.addEventListener('submit', async function(e) {
     submitBtn.textContent = '⏳ Creating account...';
     submitBtn.disabled = true;
     
-    // 4. Final duplicate check
-    try {
-        const checkResponse = await fetch(`${API_URL}/check-user`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email || undefined, phone: phone || undefined })
-        });
-        const checkData = await checkResponse.json();
-        
-        if (checkData.exists) {
-            showError(`This ${checkData.field} is already registered. Please login.`);
-            loginRedirect.style.display = 'block';
-            submitBtn.textContent = originalText;
-            submitBtn.disabled = false;
-            return;
-        }
-    } catch (error) {
-        console.error('Duplicate check failed:', error);
-    }
-    
-    // 5. Submit registration
+    // 4. Submit registration
     try {
         const payload = {
             method: currentMethod,
-            password: password,
-            full_name: fullName || 'Remora Trainee'
+            password: password
+            // No full_name - will default to 'Remora Trainee' in backend
         };
         if (email) payload.email = email;
         if (phone) payload.phone = phone;
         
+        console.log('📤 Sending payload:', payload);
+        
         const response = await fetch(API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify(payload)
         });
         
-        const data = await response.json();
+        console.log('📥 Response status:', response.status);
+        
+        let data;
+        try {
+            data = await response.json();
+            console.log('📦 Response data:', data);
+        } catch (parseError) {
+            console.error('❌ Failed to parse response:', parseError);
+            const text = await response.text();
+            console.log('📄 Raw response:', text);
+            showError('❌ Server returned invalid response. Please check Appwrite logs.');
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+            return;
+        }
         
         if (data.success) {
-            showSuccess(`✅ ${data.message}`);
-            loginRedirect.style.display = 'block';
-            registerForm.style.display = 'none';
+            // Show success with trainee ID
+            const traineeId = data.data?.trainee_id || 'REM-0000';
+            showRegistrationSuccess(traineeId);
             
-            setTimeout(() => {
-                window.location.href = 'login.html';
-            }, 3000);
+            // Hide form
+            registerForm.style.display = 'none';
+            loginRedirect.style.display = 'none';
+            
+            // Start redirect countdown
+            startRedirectCountdown(3);
+            
         } else {
             showError(`❌ ${data.error || 'Registration failed. Please try again.'}`);
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
         }
     } catch (error) {
-        console.error('Registration error:', error);
-        showError('🌐 Network error. Please check your connection and try again.');
+        console.error('❌ Registration error:', error);
+        console.error('Error details:', error.message);
+        showError(`🌐 Network error: ${error.message}. Please check your connection and try again.`);
         submitBtn.textContent = originalText;
         submitBtn.disabled = false;
     }
 });
 
 // ============================================================
+// SUCCESS HANDLING
+// ============================================================
+
+function showRegistrationSuccess(traineeId) {
+    // Hide form
+    registerForm.style.display = 'none';
+    loginRedirect.style.display = 'none';
+    
+    // Show success overlay
+    successOverlay.style.display = 'block';
+    traineeIdDisplay.textContent = traineeId;
+}
+
+function startRedirectCountdown(seconds) {
+    let remaining = seconds;
+    countdownDisplay.textContent = remaining;
+    
+    if (redirectTimer) {
+        clearInterval(redirectTimer);
+    }
+    
+    redirectTimer = setInterval(() => {
+        remaining--;
+        countdownDisplay.textContent = remaining;
+        
+        if (remaining <= 0) {
+            clearInterval(redirectTimer);
+            // Redirect to login page
+            window.location.href = 'login.html';
+        }
+    }, 1000);
+}
+
+// ============================================================
 // INITIALIZE
 // ============================================================
 
 console.log('📝 REMADEF Registration System loaded');
-console.log(`📍 API: ${API_URL}`);
+console.log(`📍 API URL: ${API_URL}`);
 console.log('📧 Email support: ✅');
 console.log('📱 Phone support: ✅');
+console.log('👤 Full name: Removed (will be in profile edit)');
+console.log('🔐 Auto-redirect to login: ✅');
+console.log('💡 If you see network error, check API_URL in register.js');
