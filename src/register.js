@@ -1,7 +1,7 @@
 // src/register.js - REMADEF Fast Registration
 // 🔥 CHANGE THIS TO YOUR APPUTE FUNCTION URL
 
-const API_URL = 'https:// 6a60f589000c366da0d3.sfo.appwrite.run'; // ⚠️ UPDATE THIS!
+const API_URL = 'https://6a60f589000c366da0d3.sfo.appwrite.run';
 
 let currentMethod = 'email';
 let timer = null;
