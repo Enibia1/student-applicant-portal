@@ -1,11 +1,10 @@
-# src/main.py - REMADEF Registration (FIXED)
+# src/main.py - REMADEF Registration (SECURE - No hardcoded keys)
 from appwrite.client import Client
 from appwrite.services.users import Users
 from appwrite.exception import AppwriteException
 import re
 import random
 import json
-import os
 
 def main(context):
     # ============================================================
@@ -37,7 +36,6 @@ def main(context):
                 'error': 'Missing request body'
             }, 400, cors_headers)
         
-        # Parse JSON
         try:
             data = json.loads(body)
         except json.JSONDecodeError:
@@ -48,7 +46,6 @@ def main(context):
         
         context.log(f"📝 Received: {json.dumps(data)}")
         
-        # Get fields
         method = data.get('method', 'email')
         password = data.get('password', '')
         email = data.get('email', '').strip() or None
@@ -127,15 +124,15 @@ def main(context):
             }, 400, cors_headers)
         
         # ============================================================
-        # INITIALIZE APPUTE - FIXED!
+        # INITIALIZE APPUTE - SECURE WAY
         # ============================================================
         
         try:
-            # Get environment variables - FIXED for Appwrite
-            project_id = os.environ.get('APPWRITE_PROJECT_ID')
-            api_key = os.environ.get('APPWRITE_API_KEY')
+            # Get from context.env (Appwrite's secure way)
+            project_id = context.env.get('APPWRITE_PROJECT_ID')
+            api_key = context.env.get('APPWRITE_API_KEY')
             
-            context.log(f"🔑 Project ID: {project_id[:10]}... (masked)")
+            context.log(f"🔑 Project ID: {project_id[:10] if project_id else 'None'}...")
             
             if not project_id or not api_key:
                 context.error("❌ Missing environment variables")
