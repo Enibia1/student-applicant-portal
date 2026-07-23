@@ -1,20 +1,29 @@
+# src/main.py - REMADEF Registration with CORS
 from appwrite.client import Client
 from appwrite.services.users import Users
 from appwrite.exception import AppwriteException
 import re
+import random
 from datetime import datetime
 
 def main(context):
-    # CORS Headers
-    headers = {
+    # ============================================================
+    # CORS HEADERS - Allow GitHub Pages
+    # ============================================================
+    cors_headers = {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type'
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Max-Age': '86400'
     }
     
-    # Handle OPTIONS preflight
+    # Handle preflight OPTIONS request
     if context.req.method == 'OPTIONS':
-        return context.res.json({'message': 'OK'}, 200, headers)
+        return context.res.json(
+            {'message': 'CORS preflight OK'}, 
+            200, 
+            cors_headers
+        )
     
     # Initialize Appwrite
     client = Client()
@@ -30,38 +39,43 @@ def main(context):
             return context.res.json({
                 'success': False,
                 'error': 'Missing request body'
-            }, 400, headers)
+            }, 400, cors_headers)
     except:
         return context.res.json({
             'success': False,
-            'error': 'Invalid JSON'
-        }, 400, headers)
+            'error': 'Invalid JSON payload'
+        }, 400, cors_headers)
     
-    # Get fields
+    # Extract fields
     email = data.get('email', '').strip() or None
     phone = data.get('phone', '').strip() or None
     password = data.get('password', '')
     method = data.get('method', 'email')
     
-    # Validation
+    context.log(f"📝 Registration - Method: {method}")
+    
+    # ============================================================
+    # VALIDATION
+    # ============================================================
+    
     if method == 'email':
         if not email:
             return context.res.json({
                 'success': False,
-                'error': 'Email is required'
-            }, 400, headers)
+                'error': 'Email address is required'
+            }, 400, cors_headers)
         if not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
             return context.res.json({
                 'success': False,
-                'error': 'Invalid email'
-            }, 400, headers)
+                'error': 'Please enter a valid email address'
+            }, 400, cors_headers)
         phone = None
-    else:
+    elif method == 'phone':
         if not phone:
             return context.res.json({
                 'success': False,
-                'error': 'Phone is required'
-            }, 400, headers)
+                'error': 'Phone number is required'
+            }, 400, cors_headers)
         # Clean phone
         clean = re.sub(r'\D', '', phone)
         if clean.startswith('0') and len(clean) == 11:
@@ -70,36 +84,79 @@ def main(context):
             phone = '+234' + clean
         elif clean.startswith('234') and len(clean) == 13:
             phone = '+' + clean
+        elif clean.startswith('+234') and len(clean) == 14:
+            phone = clean
         else:
             return context.res.json({
                 'success': False,
-                'error': 'Invalid phone number'
-            }, 400, headers)
+                'error': 'Invalid phone number. Use 08012345678'
+            }, 400, cors_headers)
         email = None
+    else:
+        return context.res.json({
+            'success': False,
+            'error': 'Invalid registration method'
+        }, 400, cors_headers)
     
     # Validate password
-    if not password or len(password) < 8:
+    if not password:
+        return context.res.json({
+            'success': False,
+            'error': 'Password is required'
+        }, 400, cors_headers)
+    if len(password) < 8:
         return context.res.json({
             'success': False,
             'error': 'Password must be at least 8 characters'
-        }, 400, headers)
+        }, 400, cors_headers)
     if not re.search(r'[a-z]', password):
         return context.res.json({
             'success': False,
-            'error': 'Password needs lowercase'
-        }, 400, headers)
+            'error': 'Password must contain a lowercase letter'
+        }, 400, cors_headers)
     if not re.search(r'[A-Z]', password):
         return context.res.json({
             'success': False,
-            'error': 'Password needs uppercase'
-        }, 400, headers)
+            'error': 'Password must contain an uppercase letter'
+        }, 400, cors_headers)
     if not re.search(r'\d', password):
         return context.res.json({
             'success': False,
-            'error': 'Password needs a number'
-        }, 400, headers)
+            'error': 'Password must contain a number'
+        }, 400, cors_headers)
     
-    # Create user
+    # ============================================================
+    # CHECK DUPLICATES
+    # ============================================================
+    
+    try:
+        # Check if user exists
+        all_users = []
+        response = users.list()
+        all_users.extend(response.get('users', []))
+        
+        while response.get('next'):
+            response = users.list(cursor=response.get('next'))
+            all_users.extend(response.get('users', []))
+        
+        for user in all_users:
+            if email and user.get('email') == email:
+                return context.res.json({
+                    'success': False,
+                    'error': 'This email is already registered. Please login.'
+                }, 409, cors_headers)
+            if phone and user.get('phone') == phone:
+                return context.res.json({
+                    'success': False,
+                    'error': 'This phone number is already registered. Please login.'
+                }, 409, cors_headers)
+    except Exception as e:
+        context.error(f"Duplicate check warning: {str(e)}")
+    
+    # ============================================================
+    # CREATE USER
+    # ============================================================
+    
     try:
         user_data = {
             'userId': 'unique()',
@@ -113,8 +170,9 @@ def main(context):
         
         new_user = users.create(**user_data)
         
+        context.log(f"✅ User created: {new_user['$id']}")
+        
         # Generate trainee ID
-        import random
         trainee_id = f"REM-{str(random.randint(1, 9999)).zfill(4)}"
         
         return context.res.json({
@@ -124,29 +182,35 @@ def main(context):
                 'user_id': new_user['$id'],
                 'email': new_user.get('email'),
                 'phone': new_user.get('phone'),
-                'trainee_id': trainee_id
+                'name': new_user.get('name'),
+                'trainee_id': trainee_id,
+                'registration_date': datetime.now().isoformat()
             }
-        }, 201, headers)
-        
+        }, 201, cors_headers)
+    
     except AppwriteException as e:
+        context.error(f"❌ Appwrite error: {str(e)}")
         error_msg = str(e).lower()
+        
         if 'email already exists' in error_msg:
             return context.res.json({
                 'success': False,
-                'error': 'Email already registered'
-            }, 409, headers)
+                'error': 'This email is already registered'
+            }, 409, cors_headers)
         elif 'phone already exists' in error_msg:
             return context.res.json({
                 'success': False,
-                'error': 'Phone already registered'
-            }, 409, headers)
+                'error': 'This phone number is already registered'
+            }, 409, cors_headers)
         else:
             return context.res.json({
                 'success': False,
-                'error': str(e)
-            }, 500, headers)
+                'error': f'Registration failed: {str(e)}'
+            }, 500, cors_headers)
+    
     except Exception as e:
+        context.error(f"❌ Unexpected error: {str(e)}")
         return context.res.json({
             'success': False,
-            'error': str(e)
-        }, 500, headers)
+            'error': 'An unexpected error occurred. Please try again.'
+        }, 500, cors_headers)
