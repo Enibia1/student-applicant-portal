@@ -1,38 +1,42 @@
-// src/register.js - REMADEF Registration Logic
-// Updated: Removed full name, auto-redirect to login
+// src/register.js - REMADEF Fast Registration
+// 🔥 CHANGE THIS TO YOUR APPUTE FUNCTION URL
 
-// ============================================================
-// CONFIGURATION - PUT YOUR ACTUAL URL HERE!
-// ============================================================
-
-// 🔥 IMPORTANT: Replace this with YOUR Appwrite function URL
-const API_URL = 'https://6a60f589000c366da0d3.sfo.appwrite.run'; // <-- CHANGE THIS!
+const API_URL = 'https://6a60f589000c366da0d3.sfo.appwrite.run'; // ⚠️ UPDATE THIS!
 
 let currentMethod = 'email';
-let redirectTimer = null;
+let timer = null;
 
 // ============================================================
-// DOM ELEMENTS
+// DOM Elements
 // ============================================================
 
-const registerForm = document.getElementById('register-form');
+const form = document.getElementById('register-form');
 const emailInput = document.getElementById('email');
 const phoneInput = document.getElementById('phone');
 const passwordInput = document.getElementById('password');
 const confirmInput = document.getElementById('confirm-password');
 const errorDisplay = document.getElementById('error-message');
-const successDisplay = document.getElementById('success-message');
-const successOverlay = document.getElementById('success-overlay');
+const successBox = document.getElementById('success-box');
 const traineeIdDisplay = document.getElementById('trainee-id-display');
 const countdownDisplay = document.getElementById('countdown');
 const emailTab = document.getElementById('email-tab');
 const phoneTab = document.getElementById('phone-tab');
 const emailField = document.getElementById('email-field');
 const phoneField = document.getElementById('phone-field');
-const loginRedirect = document.getElementById('login-redirect');
+const strengthBar = document.getElementById('strength-bar');
+const strengthText = document.getElementById('strength-text');
+const btnText = document.getElementById('btn-text');
+const btnSpinner = document.getElementById('btn-spinner');
+const submitBtn = document.querySelector('.submit-btn');
+
+// Requirements elements
+const reqLength = document.getElementById('req-length');
+const reqLower = document.getElementById('req-lower');
+const reqUpper = document.getElementById('req-upper');
+const reqNumber = document.getElementById('req-number');
 
 // ============================================================
-// HELPER FUNCTIONS
+// Helpers
 // ============================================================
 
 function isValidEmail(email) {
@@ -46,299 +50,229 @@ function isValidPhone(phone) {
 
 function normalizePhone(phone) {
     let clean = phone.replace(/\D/g, '');
-    if (clean.startsWith('0')) {
-        return '+234' + clean.slice(1);
-    } else if (clean.startsWith('234') && !clean.startsWith('+')) {
-        return '+' + clean;
-    } else if (!clean.startsWith('+') && clean.length === 10) {
-        return '+234' + clean;
-    }
+    if (clean.startsWith('0')) return '+234' + clean.slice(1);
+    if (clean.startsWith('234') && !clean.startsWith('+')) return '+' + clean;
+    if (!clean.startsWith('+') && clean.length === 10) return '+234' + clean;
     return clean;
 }
 
-function showError(message) {
-    errorDisplay.textContent = message;
+function showError(msg) {
+    errorDisplay.textContent = msg;
     errorDisplay.style.display = 'block';
-    successDisplay.style.display = 'none';
-    successOverlay.style.display = 'none';
+    successBox.style.display = 'none';
 }
 
-function showSuccess(message) {
-    successDisplay.textContent = message;
-    successDisplay.style.display = 'block';
-    errorDisplay.style.display = 'none';
-}
-
-function clearErrors() {
+function hideError() {
     errorDisplay.textContent = '';
     errorDisplay.style.display = 'none';
-    document.querySelectorAll('.field-error').forEach(el => el.textContent = '');
-    document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+}
+
+function setLoading(loading) {
+    if (loading) {
+        btnText.style.display = 'none';
+        btnSpinner.style.display = 'block';
+        submitBtn.disabled = true;
+    } else {
+        btnText.style.display = 'inline';
+        btnSpinner.style.display = 'none';
+        submitBtn.disabled = false;
+    }
 }
 
 // ============================================================
-// NAVIGATION
+// Password Strength
 // ============================================================
 
-window.goToLogin = function() {
-    // Redirect to login page (create login.html later)
-    // For now, show a message
-    alert('Login page coming soon! 🚀\n\nFor now, you can login at:\nhttps://cloud.appwrite.io/console');
+passwordInput.addEventListener('input', function() {
+    const pwd = this.value;
+    let score = 0;
+    let checks = {
+        length: pwd.length >= 8,
+        lower: /[a-z]/.test(pwd),
+        upper: /[A-Z]/.test(pwd),
+        number: /\d/.test(pwd)
+    };
     
-    // When login.html is created, use:
-    // window.location.href = 'login.html';
-};
+    // Update requirements
+    updateRequirement(reqLength, checks.length);
+    updateRequirement(reqLower, checks.lower);
+    updateRequirement(reqUpper, checks.upper);
+    updateRequirement(reqNumber, checks.number);
+    
+    // Calculate score
+    if (checks.length) score++;
+    if (checks.lower) score++;
+    if (checks.upper) score++;
+    if (checks.number) score++;
+    
+    // Update bar
+    const percent = (score / 4) * 100;
+    strengthBar.style.width = percent + '%';
+    
+    // Update colors and text
+    if (pwd.length === 0) {
+        strengthBar.style.background = '#e8ecf1';
+        strengthText.textContent = '';
+        return;
+    }
+    
+    if (score <= 1) {
+        strengthBar.style.background = '#dc3545';
+        strengthText.textContent = '🔴 Weak';
+        strengthText.style.color = '#dc3545';
+    } else if (score <= 2) {
+        strengthBar.style.background = '#ffc107';
+        strengthText.textContent = '🟡 Medium';
+        strengthText.style.color = '#ffc107';
+    } else if (score <= 3) {
+        strengthBar.style.background = '#17a2b8';
+        strengthText.textContent = '🔵 Good';
+        strengthText.style.color = '#17a2b8';
+    } else {
+        strengthBar.style.background = '#28a745';
+        strengthText.textContent = '🟢 Strong';
+        strengthText.style.color = '#28a745';
+    }
+});
+
+function updateRequirement(el, met) {
+    if (met) {
+        el.className = 'met';
+        el.textContent = el.textContent.replace('🔴', '✅');
+    } else {
+        el.className = '';
+        el.textContent = el.textContent.replace('✅', '🔴');
+    }
+}
 
 // ============================================================
-// METHOD SWITCHING
+// Method Switching
 // ============================================================
 
 window.switchMethod = function(method) {
     currentMethod = method;
-    clearErrors();
+    hideError();
     
     if (method === 'email') {
         emailField.classList.remove('hidden');
         phoneField.classList.add('hidden');
-        emailInput.required = true;
-        phoneInput.required = false;
         emailTab.classList.add('active');
         phoneTab.classList.remove('active');
     } else {
         emailField.classList.add('hidden');
         phoneField.classList.remove('hidden');
-        emailInput.required = false;
-        phoneInput.required = true;
         phoneTab.classList.add('active');
         emailTab.classList.remove('active');
     }
 };
 
 // ============================================================
-// PASSWORD TOGGLE
+// Password Toggle
 // ============================================================
 
 window.togglePassword = function(fieldId) {
     const input = document.getElementById(fieldId);
-    const button = input.parentElement.querySelector('.password-toggle');
+    const btn = input.parentElement.querySelector('.password-toggle');
     if (input.type === 'password') {
         input.type = 'text';
-        button.textContent = '🙈';
+        btn.textContent = '🙈';
     } else {
         input.type = 'password';
-        button.textContent = '👁️';
+        btn.textContent = '👁️';
     }
 };
 
 // ============================================================
-// PASSWORD STRENGTH
+// Login Redirect
 // ============================================================
 
-passwordInput.addEventListener('input', function() {
-    const password = this.value;
-    const strengthEl = document.getElementById('password-strength');
-    
-    if (password.length === 0) {
-        strengthEl.style.display = 'none';
-        return;
-    }
-    
-    let score = 0;
-    if (password.length >= 8) score++;
-    if (/[a-z]/.test(password)) score++;
-    if (/[A-Z]/.test(password)) score++;
-    if (/\d/.test(password)) score++;
-    
-    strengthEl.style.display = 'block';
-    
-    if (score <= 1) {
-        strengthEl.textContent = '🔴 Weak - Use 8+ chars, uppercase, lowercase, and numbers';
-        strengthEl.style.color = '#dc3545';
-    } else if (score <= 2) {
-        strengthEl.textContent = '🟡 Medium - Add more variety for stronger password';
-        strengthEl.style.color = '#ffc107';
-    } else {
-        strengthEl.textContent = '🟢 Strong - Good password!';
-        strengthEl.style.color = '#28a745';
-    }
-});
+window.goToLogin = function() {
+    window.location.href = 'login.html';
+};
 
 // ============================================================
-// FORM SUBMISSION
+// Form Submit
 // ============================================================
 
-registerForm.addEventListener('submit', async function(e) {
+form.addEventListener('submit', async function(e) {
     e.preventDefault();
-    clearErrors();
+    hideError();
     
     let email = emailInput.value.trim();
     let phone = phoneInput.value.trim();
     const password = passwordInput.value;
     const confirmPassword = confirmInput.value;
     
-    console.log('📝 Starting registration...');
-    console.log('API URL:', API_URL);
-    
-    // 1. Validate method
+    // Validate
     if (currentMethod === 'email') {
-        if (!email) {
-            showError('📧 Email address is required');
-            emailInput.focus();
-            return;
-        }
-        if (!isValidEmail(email)) {
-            showError('📧 Please enter a valid email address');
-            emailInput.focus();
-            return;
-        }
+        if (!email) return showError('📧 Email is required');
+        if (!isValidEmail(email)) return showError('📧 Invalid email address');
         phone = '';
     } else {
-        if (!phone) {
-            showError('📱 Phone number is required');
-            phoneInput.focus();
-            return;
-        }
-        if (!isValidPhone(phone)) {
-            showError('📱 Enter a valid Nigerian phone number (e.g., 08012345678)');
-            phoneInput.focus();
-            return;
-        }
+        if (!phone) return showError('📱 Phone number is required');
+        if (!isValidPhone(phone)) return showError('📱 Invalid phone number');
         email = '';
         phone = normalizePhone(phone);
     }
     
-    // 2. Validate password
-    if (!password) {
-        showError('🔑 Password is required');
-        passwordInput.focus();
-        return;
-    }
-    if (password.length < 8) {
-        showError('🔑 Password must be at least 8 characters');
-        passwordInput.focus();
-        return;
-    }
-    if (!/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password)) {
-        showError('🔑 Password must contain uppercase, lowercase, and a number');
-        passwordInput.focus();
-        return;
-    }
-    if (password !== confirmPassword) {
-        showError('🔑 Passwords do not match');
-        confirmInput.focus();
-        return;
-    }
+    if (!password) return showError('🔑 Password is required');
+    if (password.length < 8) return showError('🔑 Password must be 8+ characters');
+    if (!/[a-z]/.test(password)) return showError('🔑 Need a lowercase letter');
+    if (!/[A-Z]/.test(password)) return showError('🔑 Need an uppercase letter');
+    if (!/\d/.test(password)) return showError('🔑 Need a number');
+    if (password !== confirmPassword) return showError('🔑 Passwords do not match');
     
-    // 3. Show loading
-    const submitBtn = document.querySelector('.submit-btn');
-    const originalText = submitBtn.textContent;
-    submitBtn.textContent = '⏳ Creating account...';
-    submitBtn.disabled = true;
+    // Loading
+    setLoading(true);
     
-    // 4. Submit registration
     try {
-        const payload = {
-            method: currentMethod,
-            password: password
-            // No full_name - will default to 'Remora Trainee' in backend
-        };
+        const payload = { method: currentMethod, password };
         if (email) payload.email = email;
         if (phone) payload.phone = phone;
         
-        console.log('📤 Sending payload:', payload);
+        console.log('📤 Sending:', payload);
         
         const response = await fetch(API_URL, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
         
-        console.log('📥 Response status:', response.status);
-        
-        let data;
-        try {
-            data = await response.json();
-            console.log('📦 Response data:', data);
-        } catch (parseError) {
-            console.error('❌ Failed to parse response:', parseError);
-            const text = await response.text();
-            console.log('📄 Raw response:', text);
-            showError('❌ Server returned invalid response. Please check Appwrite logs.');
-            submitBtn.textContent = originalText;
-            submitBtn.disabled = false;
-            return;
-        }
+        const data = await response.json();
+        console.log('📦 Response:', data);
         
         if (data.success) {
-            // Show success with trainee ID
-            const traineeId = data.data?.trainee_id || 'REM-0000';
-            showRegistrationSuccess(traineeId);
+            // Show success
+            form.style.display = 'none';
+            successBox.style.display = 'block';
+            traineeIdDisplay.textContent = data.data?.trainee_id || 'REM-0000';
             
-            // Hide form
-            registerForm.style.display = 'none';
-            loginRedirect.style.display = 'none';
-            
-            // Start redirect countdown
-            startRedirectCountdown(3);
-            
+            // Countdown to login
+            let seconds = 3;
+            countdownDisplay.textContent = seconds;
+            if (timer) clearInterval(timer);
+            timer = setInterval(() => {
+                seconds--;
+                countdownDisplay.textContent = seconds;
+                if (seconds <= 0) {
+                    clearInterval(timer);
+                    window.location.href = 'login.html';
+                }
+            }, 1000);
         } else {
-            showError(`❌ ${data.error || 'Registration failed. Please try again.'}`);
-            submitBtn.textContent = originalText;
-            submitBtn.disabled = false;
+            showError(`❌ ${data.error || 'Registration failed'}`);
+            setLoading(false);
         }
     } catch (error) {
-        console.error('❌ Registration error:', error);
-        console.error('Error details:', error.message);
-        showError(`🌐 Network error: ${error.message}. Please check your connection and try again.`);
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
+        console.error('❌ Error:', error);
+        showError(`🌐 ${error.message || 'Network error'}`);
+        setLoading(false);
     }
 });
 
 // ============================================================
-// SUCCESS HANDLING
+// Init
 // ============================================================
 
-function showRegistrationSuccess(traineeId) {
-    // Hide form
-    registerForm.style.display = 'none';
-    loginRedirect.style.display = 'none';
-    
-    // Show success overlay
-    successOverlay.style.display = 'block';
-    traineeIdDisplay.textContent = traineeId;
-}
-
-function startRedirectCountdown(seconds) {
-    let remaining = seconds;
-    countdownDisplay.textContent = remaining;
-    
-    if (redirectTimer) {
-        clearInterval(redirectTimer);
-    }
-    
-    redirectTimer = setInterval(() => {
-        remaining--;
-        countdownDisplay.textContent = remaining;
-        
-        if (remaining <= 0) {
-            clearInterval(redirectTimer);
-            // Redirect to login page
-            window.location.href = 'login.html';
-        }
-    }, 1000);
-}
-
-// ============================================================
-// INITIALIZE
-// ============================================================
-
-console.log('📝 REMADEF Registration System loaded');
-console.log(`📍 API URL: ${API_URL}`);
-console.log('📧 Email support: ✅');
-console.log('📱 Phone support: ✅');
-console.log('👤 Full name: Removed (will be in profile edit)');
-console.log('🔐 Auto-redirect to login: ✅');
-console.log('💡 If you see network error, check API_URL in register.js');
+console.log('✅ REMADEF Registration loaded');
+console.log('📍 API:', API_URL);
