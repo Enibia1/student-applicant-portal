@@ -144,9 +144,7 @@ def main(context):
                     cors_headers
                 )
 
-            email_pattern = (
-                r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
-            )
+            email_pattern = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
 
             if not re.match(
                 email_pattern,
@@ -187,8 +185,6 @@ def main(context):
                 phone
             )
 
-            # Nigerian local format:
-            # 08012345678
             if (
                 len(clean_phone) == 11
                 and clean_phone.startswith("0")
@@ -196,14 +192,10 @@ def main(context):
 
                 phone = "+234" + clean_phone[1:]
 
-            # Nigerian format without zero:
-            # 8012345678
             elif len(clean_phone) == 10:
 
                 phone = "+234" + clean_phone
 
-            # International Nigerian format:
-            # 2348012345678
             elif (
                 len(clean_phone) == 13
                 and clean_phone.startswith("234")
@@ -302,8 +294,11 @@ def main(context):
 
         client = Client()
 
+        # IMPORTANT:
+        # This project is hosted in the San Francisco region.
+
         client.set_endpoint(
-            "https://cloud.appwrite.io/v1"
+            "https://sfo.cloud.appwrite.io/v1"
         )
 
         client.set_project(
@@ -392,10 +387,6 @@ def main(context):
                 cors_headers
             )
 
-        # ========================================================
-        # APPWRITE ERROR HANDLING
-        # ========================================================
-
         except AppwriteException as e:
 
             error_message = str(e)
@@ -439,11 +430,6 @@ def main(context):
                     cors_headers
                 )
 
-            context.error(
-                "Full Appwrite error: "
-                + error_message
-            )
-
             return context.res.json(
                 {
                     "success": False,
@@ -453,10 +439,6 @@ def main(context):
                 500,
                 cors_headers
             )
-
-        # ========================================================
-        # GENERAL USER CREATION ERROR
-        # ========================================================
 
         except Exception as e:
 
@@ -474,10 +456,6 @@ def main(context):
                 500,
                 cors_headers
             )
-
-    # ============================================================
-    # GLOBAL ERROR HANDLER
-    # ============================================================
 
     except Exception as e:
 
