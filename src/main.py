@@ -1,296 +1,263 @@
+import os
+import json
+import re
+import secrets
+import string
+
 from appwrite.client import Client
 from appwrite.services.users import Users
 from appwrite.exception import AppwriteException
 
-import os
-import re
-import json
-import random
 
+# ============================================================
+# CONFIGURATION
+# ============================================================
+
+PROJECT_ID = os.environ.get("APPWRITE_FUNCTION_PROJECT_ID")
+API_KEY = os.environ.get("APPWRITE_API_KEY")
+
+
+# ============================================================
+# CORS HEADERS
+# ============================================================
+
+CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "https://enibia1.github.io",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Accept",
+    "Access-Control-Max-Age": "86400",
+}
+
+
+# ============================================================
+# RESPONSE HELPER
+# ============================================================
+
+def response_json(res, status_code, body):
+    return res.json(
+        body,
+        status_code=status_code,
+        headers={
+            **CORS_HEADERS,
+            "Content-Type": "application/json",
+        }
+    )
+
+
+# ============================================================
+# TRAINEE ID
+# ============================================================
+
+def generate_trainee_id():
+    chars = string.ascii_uppercase + string.digits
+    code = ''.join(secrets.choice(chars) for _ in range(6))
+    return f"REM-{code}"
+
+
+# ============================================================
+# EMAIL VALIDATION
+# ============================================================
+
+def valid_email(email):
+    pattern = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
+    return re.match(pattern, email) is not None
+
+
+# ============================================================
+# MAIN FUNCTION
+# ============================================================
 
 def main(context):
 
-    # ============================================================
-    # CORS HEADERS
-    # ============================================================
+    req = context.req
+    res = context.res
 
-    cors_headers = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type"
-    }
+    # --------------------------------------------------------
+    # HANDLE CORS PREFLIGHT REQUEST
+    # --------------------------------------------------------
 
-    # ============================================================
-    # CORS PREFLIGHT
-    # ============================================================
+    if req.method == "OPTIONS":
 
-    if context.req.method == "OPTIONS":
-
-        return context.res.json(
-            {
-                "success": True,
-                "message": "CORS OK"
-            },
-            200,
-            cors_headers
+        return res.empty(
+            status_code=204,
+            headers=CORS_HEADERS
         )
 
-    # ============================================================
-    # ONLY POST REQUESTS
-    # ============================================================
+    # --------------------------------------------------------
+    # ONLY POST ALLOWED
+    # --------------------------------------------------------
 
-    if context.req.method != "POST":
+    if req.method != "POST":
 
-        return context.res.json(
+        return response_json(
+            res,
+            405,
             {
                 "success": False,
-                "error": "Only POST requests are allowed"
-            },
-            405,
-            cors_headers
+                "error": "Method not allowed"
+            }
         )
+
+    # --------------------------------------------------------
+    # READ REQUEST BODY
+    # --------------------------------------------------------
 
     try:
 
-        # ========================================================
-        # READ REQUEST BODY
-        # ========================================================
+        body = req.body
 
-        body = context.req.body
-
-        if not body:
-
-            return context.res.json(
-                {
-                    "success": False,
-                    "error": "Missing request body"
-                },
-                400,
-                cors_headers
-            )
-
-        # ========================================================
-        # PARSE JSON
-        # ========================================================
-
-        try:
-
+        if isinstance(body, str):
             data = json.loads(body)
 
-        except (json.JSONDecodeError, TypeError):
-
-            return context.res.json(
-                {
-                    "success": False,
-                    "error": "Invalid JSON request body"
-                },
-                400,
-                cors_headers
-            )
-
-        # ========================================================
-        # READ REGISTRATION DATA
-        # ========================================================
-
-        method = str(
-            data.get("method", "email")
-        ).strip().lower()
-
-        email = str(
-            data.get("email", "") or ""
-        ).strip().lower()
-
-        phone = str(
-            data.get("phone", "") or ""
-        ).strip()
-
-        password = str(
-            data.get("password", "") or ""
-        )
-
-        name = str(
-            data.get("name", "") or "Remora Trainee"
-        ).strip()
-
-        # ========================================================
-        # VALIDATE METHOD
-        # ========================================================
-
-        if method not in ["email", "phone"]:
-
-            return context.res.json(
-                {
-                    "success": False,
-                    "error": "Invalid registration method"
-                },
-                400,
-                cors_headers
-            )
-
-        # ========================================================
-        # EMAIL REGISTRATION
-        # ========================================================
-
-        if method == "email":
-
-            if not email:
-
-                return context.res.json(
-                    {
-                        "success": False,
-                        "error": "Email is required"
-                    },
-                    400,
-                    cors_headers
-                )
-
-            email_pattern = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
-
-            if not re.match(
-                email_pattern,
-                email
-            ):
-
-                return context.res.json(
-                    {
-                        "success": False,
-                        "error": "Invalid email address"
-                    },
-                    400,
-                    cors_headers
-                )
-
-            phone = None
-
-        # ========================================================
-        # PHONE REGISTRATION
-        # ========================================================
+        elif isinstance(body, dict):
+            data = body
 
         else:
+            data = {}
 
-            if not phone:
+    except Exception as error:
 
-                return context.res.json(
-                    {
-                        "success": False,
-                        "error": "Phone number is required"
-                    },
-                    400,
-                    cors_headers
-                )
+        context.error(f"Request parsing error: {str(error)}")
 
-            clean_phone = re.sub(
-                r"\D",
-                "",
-                phone
-            )
-
-            if (
-                len(clean_phone) == 11
-                and clean_phone.startswith("0")
-            ):
-
-                phone = "+234" + clean_phone[1:]
-
-            elif len(clean_phone) == 10:
-
-                phone = "+234" + clean_phone
-
-            elif (
-                len(clean_phone) == 13
-                and clean_phone.startswith("234")
-            ):
-
-                phone = "+" + clean_phone
-
-            else:
-
-                return context.res.json(
-                    {
-                        "success": False,
-                        "error": "Invalid Nigerian phone number"
-                    },
-                    400,
-                    cors_headers
-                )
-
-            email = None
-
-        # ========================================================
-        # PASSWORD VALIDATION
-        # ========================================================
-
-        if not password:
-
-            return context.res.json(
-                {
-                    "success": False,
-                    "error": "Password is required"
-                },
-                400,
-                cors_headers
-            )
-
-        if len(password) < 8:
-
-            return context.res.json(
-                {
-                    "success": False,
-                    "error": "Password must be at least 8 characters"
-                },
-                400,
-                cors_headers
-            )
-
-        # ========================================================
-        # APPWRITE API KEY
-        # ========================================================
-
-        api_key = context.req.headers.get(
-            "x-appwrite-key"
+        return response_json(
+            res,
+            400,
+            {
+                "success": False,
+                "error": "Invalid JSON request"
+            }
         )
 
-        if not api_key:
+    # --------------------------------------------------------
+    # EXTRACT DATA
+    # --------------------------------------------------------
 
-            context.error(
-                "Missing x-appwrite-key header"
-            )
+    method = data.get("method", "email")
 
-            return context.res.json(
-                {
-                    "success": False,
-                    "error": "Server authorization unavailable"
-                },
-                500,
-                cors_headers
-            )
+    email = data.get("email")
+    phone = data.get("phone")
+    password = data.get("password")
 
-        # ========================================================
-        # PROJECT ID
-        # ========================================================
+    # --------------------------------------------------------
+    # VALIDATE PASSWORD
+    # --------------------------------------------------------
 
-        project_id = os.environ.get(
-            "APPWRITE_PROJECT_ID"
+    if not password:
+
+        return response_json(
+            res,
+            400,
+            {
+                "success": False,
+                "error": "Password is required"
+            }
         )
 
-        if not project_id:
+    if len(password) < 8:
 
-            context.error(
-                "APPWRITE_PROJECT_ID is missing"
-            )
+        return response_json(
+            res,
+            400,
+            {
+                "success": False,
+                "error": "Password must be at least 8 characters"
+            }
+        )
 
-            return context.res.json(
+    if not re.search(r"[a-z]", password):
+
+        return response_json(
+            res,
+            400,
+            {
+                "success": False,
+                "error": "Password requires a lowercase letter"
+            }
+        )
+
+    if not re.search(r"[A-Z]", password):
+
+        return response_json(
+            res,
+            400,
+            {
+                "success": False,
+                "error": "Password requires an uppercase letter"
+            }
+        )
+
+    if not re.search(r"\d", password):
+
+        return response_json(
+            res,
+            400,
+            {
+                "success": False,
+                "error": "Password requires a number"
+            }
+        )
+
+    # --------------------------------------------------------
+    # VALIDATE EMAIL OR PHONE
+    # --------------------------------------------------------
+
+    if method == "email":
+
+        if not email:
+
+            return response_json(
+                res,
+                400,
                 {
                     "success": False,
-                    "error": "Server configuration error"
-                },
-                500,
-                cors_headers
+                    "error": "Email is required"
+                }
             )
 
-        # ========================================================
-        # INITIALIZE APPWRITE CLIENT
-        # ========================================================
+        email = email.strip().lower()
+
+        if not valid_email(email):
+
+            return response_json(
+                res,
+                400,
+                {
+                    "success": False,
+                    "error": "Invalid email address"
+                }
+            )
+
+    elif method == "phone":
+
+        if not phone:
+
+            return response_json(
+                res,
+                400,
+                {
+                    "success": False,
+                    "error": "Phone number is required"
+                }
+            )
+
+        phone = phone.strip()
+
+    else:
+
+        return response_json(
+            res,
+            400,
+            {
+                "success": False,
+                "error": "Invalid registration method"
+            }
+        )
+
+    # ========================================================
+    # APPWRITE CLIENT
+    # ========================================================
+
+    try:
 
         client = Client()
 
@@ -298,217 +265,100 @@ def main(context):
             "https://sfo.cloud.appwrite.io/v1"
         )
 
-        client.set_project(
-            project_id
-        )
-
-        client.set_key(
-            api_key
-        )
+        client.set_project(PROJECT_ID)
+        client.set_key(API_KEY)
 
         users = Users(client)
 
-        # ========================================================
-        # GENERATE USER ID
-        # ========================================================
+        # ----------------------------------------------------
+        # CREATE USER
+        # ----------------------------------------------------
 
-        user_id = (
-            "rem_"
-            + str(
-                random.randint(
-                    100000000,
-                    999999999
-                )
+        if method == "email":
+
+            user = users.create(
+                user_id="unique()",
+                email=email,
+                password=password
             )
+
+        else:
+
+            user = users.create(
+                user_id="unique()",
+                phone=phone,
+                password=password
+            )
+
+        # ----------------------------------------------------
+        # SAFE SDK OBJECT EXTRACTION
+        # ----------------------------------------------------
+
+        user_id = getattr(user, "id", None)
+
+        if not user_id:
+
+            try:
+                user_id = user["$id"]
+            except Exception:
+                user_id = None
+
+        if not user_id:
+
+            raise Exception(
+                "User was created but Appwrite user ID was unavailable"
+            )
+
+        trainee_id = generate_trainee_id()
+
+        context.log(
+            f"Account created successfully: {user_id}"
         )
 
-        # ========================================================
-        # PREPARE USER DATA
-        # ========================================================
+        # ----------------------------------------------------
+        # SUCCESS
+        # ----------------------------------------------------
 
-        user_data = {
-            "user_id": user_id,
-            "password": password,
-            "name": name
-        }
+        return response_json(
+            res,
+            201,
+            {
+                "success": True,
+                "message": "Account created successfully",
+                "data": {
+                    "user_id": user_id,
+                    "trainee_id": trainee_id,
+                    "method": method
+                }
+            }
+        )
 
-        if email:
-
-            user_data["email"] = email
-
-        if phone:
-
-            user_data["phone"] = phone
-
-        # ========================================================
-        # CREATE APPWRITE USER
-        # ========================================================
-
-        try:
-
-            new_user = users.create(
-                **user_data
-            )
-
-            # ====================================================
-            # IMPORTANT:
-            # Appwrite Python SDK returns a User object.
-            # It is NOT a dictionary.
-            # ====================================================
-
-            appwrite_user_id = getattr(
-                new_user,
-                "id",
-                None
-            )
-
-            appwrite_email = getattr(
-                new_user,
-                "email",
-                None
-            )
-
-            appwrite_phone = getattr(
-                new_user,
-                "phone",
-                None
-            )
-
-            appwrite_name = getattr(
-                new_user,
-                "name",
-                None
-            )
-
-            # ====================================================
-            # GENERATE REMADEF TRAINEE ID
-            # ====================================================
-
-            trainee_id = (
-                "REM-"
-                + str(
-                    random.randint(
-                        1,
-                        9999
-                    )
-                ).zfill(4)
-            )
-
-            # ====================================================
-            # SUCCESS RESPONSE
-            # ====================================================
-
-            return context.res.json(
-                {
-                    "success": True,
-                    "message": "Account created successfully!",
-                    "data": {
-                        "user_id": appwrite_user_id,
-                        "email": appwrite_email,
-                        "phone": appwrite_phone,
-                        "name": appwrite_name,
-                        "trainee_id": trainee_id
-                    }
-                },
-                201,
-                cors_headers
-            )
-
-        # ========================================================
-        # APPWRITE API ERROR
-        # ========================================================
-
-        except AppwriteException as e:
-
-            error_message = str(e)
-
-            error_lower = error_message.lower()
-
-            context.error(
-                "Appwrite user creation error: "
-                + error_message
-            )
-
-            if (
-                "email already exists"
-                in error_lower
-                or "user with the same email"
-                in error_lower
-            ):
-
-                return context.res.json(
-                    {
-                        "success": False,
-                        "error": "This email is already registered"
-                    },
-                    409,
-                    cors_headers
-                )
-
-            if (
-                "phone already exists"
-                in error_lower
-                or "user with the same phone"
-                in error_lower
-            ):
-
-                return context.res.json(
-                    {
-                        "success": False,
-                        "error": "This phone number is already registered"
-                    },
-                    409,
-                    cors_headers
-                )
-
-            return context.res.json(
-                {
-                    "success": False,
-                    "error": "Registration failed",
-                    "details": error_message
-                },
-                500,
-                cors_headers
-            )
-
-        # ========================================================
-        # GENERAL CREATION ERROR
-        # ========================================================
-
-        except Exception as e:
-
-            context.error(
-                "Unexpected account creation error: "
-                + str(e)
-            )
-
-            return context.res.json(
-                {
-                    "success": False,
-                    "error": "Account creation failed",
-                    "details": str(e)
-                },
-                500,
-                cors_headers
-            )
-
-    # ============================================================
-    # GLOBAL ERROR HANDLER
-    # ============================================================
-
-    except Exception as e:
+    except AppwriteException as error:
 
         context.error(
-            "Unexpected server error: "
-            + str(e)
+            f"Appwrite error: {str(error)}"
         )
 
-        return context.res.json(
+        return response_json(
+            res,
+            400,
             {
                 "success": False,
-                "error": "Internal server error",
-                "details": str(e)
-            },
+                "error": str(error)
+            }
+        )
+
+    except Exception as error:
+
+        context.error(
+            f"Registration error: {str(error)}"
+        )
+
+        return response_json(
+            res,
             500,
-            cors_headers
+            {
+                "success": False,
+                "error": "Account creation failed"
+            }
         )
