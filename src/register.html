@@ -1,0 +1,343 @@
+<!-- src/register.html - REMADEF Registration Page -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Account - REMADEF</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            max-width: 440px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo p {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .method-toggle {
+            display: flex;
+            background: #f0f2f5;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 25px;
+        }
+
+        .method-toggle button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #666;
+        }
+
+        .method-toggle button.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.2);
+        }
+
+        .method-toggle button:hover {
+            color: #667eea;
+        }
+
+        .field-group {
+            margin-bottom: 18px;
+        }
+
+        .field-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .field-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: border-color 0.3s;
+            outline: none;
+        }
+
+        .field-group input:focus {
+            border-color: #667eea;
+        }
+
+        .field-group input.input-error {
+            border-color: #dc3545;
+        }
+
+        .phone-input {
+            display: flex;
+            align-items: center;
+        }
+
+        .phone-input .country-code {
+            background: #f0f2f5;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-right: none;
+            border-radius: 10px 0 0 10px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .phone-input input {
+            border-radius: 0 10px 10px 0;
+            border-left: none;
+        }
+
+        .field-error {
+            color: #dc3545;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+
+        .password-strength {
+            font-size: 13px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+
+        .password-wrapper input {
+            padding-right: 45px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            opacity: 0.6;
+        }
+
+        .password-toggle:hover {
+            opacity: 1;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            display: none;
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .success-message {
+            display: none;
+            color: #155724;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .login-redirect {
+            display: none;
+            text-align: center;
+            margin-top: 18px;
+            font-size: 14px;
+        }
+
+        .login-redirect a {
+            color: #667eea;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .login-redirect a:hover {
+            text-decoration: underline;
+        }
+
+        .terms {
+            text-align: center;
+            font-size: 12px;
+            color: #999;
+            margin-top: 20px;
+        }
+
+        .terms a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 25px 18px;
+            }
+            .logo h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Logo -->
+        <div class="logo">
+            <h1>🚀 REMADEF</h1>
+            <p>Create your account to get started</p>
+        </div>
+
+        <!-- Error & Success Messages -->
+        <div id="error-message" class="error-message"></div>
+        <div id="success-message" class="success-message"></div>
+
+        <!-- Registration Form -->
+        <form id="register-form">
+            <!-- Method Toggle -->
+            <div class="method-toggle">
+                <button type="button" id="email-tab" class="active" onclick="switchMethod('email')">
+                    📧 Email
+                </button>
+                <button type="button" id="phone-tab" onclick="switchMethod('phone')">
+                    📱 Phone
+                </button>
+            </div>
+
+            <!-- Email Field -->
+            <div id="email-field" class="field-group">
+                <label>Email Address *</label>
+                <input type="email" id="email" placeholder="you@example.com" />
+                <div id="email-error" class="field-error"></div>
+            </div>
+
+            <!-- Phone Field -->
+            <div id="phone-field" class="field-group hidden">
+                <label>Phone Number *</label>
+                <div class="phone-input">
+                    <span class="country-code">+234</span>
+                    <input type="tel" id="phone" placeholder="8037537614" />
+                </div>
+                <div id="phone-error" class="field-error"></div>
+                <small style="color:#999; font-size:12px;">Enter 10-digit number (e.g., 8037537614)</small>
+            </div>
+
+            <!-- Password -->
+            <div class="field-group">
+                <label>Password *</label>
+                <div class="password-wrapper">
+                    <input type="password" id="password" placeholder="Create a strong password" />
+                    <button type="button" class="password-toggle" onclick="togglePassword('password')">👁️</button>
+                </div>
+                <div id="password-strength" class="password-strength"></div>
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="field-group">
+                <label>Confirm Password *</label>
+                <div class="password-wrapper">
+                    <input type="password" id="confirm-password" placeholder="Confirm your password" />
+                    <button type="button" class="password-toggle" onclick="togglePassword('confirm-password')">👁️</button>
+                </div>
+            </div>
+
+            <!-- Optional: Full Name -->
+            <div class="field-group">
+                <label>Full Name (Optional)</label>
+                <input type="text" id="full-name" placeholder="John Doe" />
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="submit-btn">🚀 Create Account</button>
+        </form>
+
+        <!-- Login Redirect -->
+        <div id="login-redirect" class="login-redirect">
+            Already have an account? <a href="login.html">Login here</a>
+        </div>
+
+        <div class="terms">
+            By creating an account, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+        </div>
+    </div>
+
+    <script type="module" src="register.js"></script>
+</body>
+</html>
