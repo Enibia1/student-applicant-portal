@@ -1,5 +1,11 @@
-const API_URL =
-    "https://6a60f589000c366da0d3.sfo.appwrite.run";
+const PROJECT_ID =
+    "6a5bc178003a2529271e";
+
+const FUNCTION_ID =
+    "6a60f5850019a9371c1e";
+
+const APPWRITE_ENDPOINT =
+    "https://sfo.cloud.appwrite.io/v1";
 
 let method = "email";
 
@@ -8,77 +14,99 @@ const $ = id =>
 
 const form = $("form");
 const error = $("error");
+
 const emailBox = $("email-box");
 const phoneBox = $("phone-box");
+
 const emailTab = $("email-tab");
 const phoneTab = $("phone-tab");
+
 const submit = $("submit");
+
 
 function showError(message) {
 
     error.textContent = message;
+
     error.style.display = "block";
 
 }
 
+
 function hideError() {
 
     error.textContent = "";
+
     error.style.display = "none";
 
 }
 
-function togglePassword(id, button) {
+
+function togglePassword(id) {
 
     const input = $(id);
+
+    const button =
+        input.parentElement.querySelector("button");
 
     if (input.type === "password") {
 
         input.type = "text";
+
         button.textContent = "🙈";
 
     } else {
 
         input.type = "password";
+
         button.textContent = "👁️";
 
     }
 
 }
 
+
 emailTab.onclick = function () {
 
     method = "email";
 
     emailTab.classList.add("active");
+
     phoneTab.classList.remove("active");
 
     emailBox.style.display = "block";
+
     phoneBox.style.display = "none";
 
     $("email").required = true;
+
     $("phone").required = false;
 
     hideError();
 
 };
 
+
 phoneTab.onclick = function () {
 
     method = "phone";
 
     phoneTab.classList.add("active");
+
     emailTab.classList.remove("active");
 
     emailBox.style.display = "none";
+
     phoneBox.style.display = "block";
 
     $("email").required = false;
+
     $("phone").required = true;
 
     hideError();
 
 };
+
 
 $("password").oninput = function () {
 
@@ -86,51 +114,73 @@ $("password").oninput = function () {
 
     const checks = {
 
-        length: password.length >= 8,
-        lowercase: /[a-z]/.test(password),
-        uppercase: /[A-Z]/.test(password),
-        number: /\d/.test(password)
+        length:
+            password.length >= 8,
+
+        lowercase:
+            /[a-z]/.test(password),
+
+        uppercase:
+            /[A-Z]/.test(password),
+
+        number:
+            /\d/.test(password)
 
     };
+
 
     const passed =
         Object.values(checks)
             .filter(Boolean)
             .length;
 
+
     if (passed === 4) {
 
-        $("strength").textContent = "🟢 Strong";
+        $("strength-text").textContent =
+            "🟢 Strong";
 
     } else if (passed >= 2) {
 
-        $("strength").textContent = "🟡 Medium";
+        $("strength-text").textContent =
+            "🟡 Medium";
 
     } else {
 
-        $("strength").textContent = "🔴 Weak";
+        $("strength-text").textContent =
+            "🔴 Weak";
 
     }
 
-    $("length-check").textContent =
-        (checks.length ? "✅" : "🔴") + " 8+ chars";
 
-    $("lower-check").textContent =
-        (checks.lowercase ? "✅" : "🔴") + " Lowercase";
+    $("length").textContent =
+        (checks.length ? "✅" : "🔴")
+        + " 8+ chars";
 
-    $("upper-check").textContent =
-        (checks.uppercase ? "✅" : "🔴") + " Uppercase";
 
-    $("number-check").textContent =
-        (checks.number ? "✅" : "🔴") + " Number";
+    $("lower").textContent =
+        (checks.lowercase ? "✅" : "🔴")
+        + " Lowercase";
+
+
+    $("upper").textContent =
+        (checks.uppercase ? "✅" : "🔴")
+        + " Uppercase";
+
+
+    $("number").textContent =
+        (checks.number ? "✅" : "🔴")
+        + " Number";
 
 };
+
 
 form.onsubmit = async function (e) {
 
     e.preventDefault();
 
     hideError();
+
 
     const email =
         $("email").value.trim();
@@ -144,6 +194,7 @@ form.onsubmit = async function (e) {
     const confirm =
         $("confirm").value;
 
+
     if (method === "email" && !email) {
 
         return showError(
@@ -151,6 +202,7 @@ form.onsubmit = async function (e) {
         );
 
     }
+
 
     if (method === "phone" && !phone) {
 
@@ -160,6 +212,7 @@ form.onsubmit = async function (e) {
 
     }
 
+
     if (password.length < 8) {
 
         return showError(
@@ -167,6 +220,7 @@ form.onsubmit = async function (e) {
         );
 
     }
+
 
     if (!/[a-z]/.test(password)) {
 
@@ -176,6 +230,7 @@ form.onsubmit = async function (e) {
 
     }
 
+
     if (!/[A-Z]/.test(password)) {
 
         return showError(
@@ -183,6 +238,7 @@ form.onsubmit = async function (e) {
         );
 
     }
+
 
     if (!/\d/.test(password)) {
 
@@ -192,6 +248,7 @@ form.onsubmit = async function (e) {
 
     }
 
+
     if (password !== confirm) {
 
         return showError(
@@ -200,28 +257,38 @@ form.onsubmit = async function (e) {
 
     }
 
+
     submit.disabled = true;
 
     submit.textContent =
         "⏳ Creating Account...";
 
+
     const payload = {
 
-        method: method,
-        password: password
+        method:
+            method,
+
+        password:
+            password
 
     };
 
+
     if (method === "email") {
 
-        payload.email = email;
+        payload.email =
+            email;
 
     } else {
 
         let cleanPhone =
             phone.replace(/\D/g, "");
 
-        if (cleanPhone.startsWith("0")) {
+
+        if (
+            cleanPhone.startsWith("0")
+        ) {
 
             cleanPhone =
                 "+234" +
@@ -243,100 +310,141 @@ form.onsubmit = async function (e) {
 
         }
 
+
         payload.phone =
             cleanPhone;
 
     }
 
+
     showError(
         "🔄 Connecting to registration server..."
     );
 
+
     try {
 
-        const response = await fetch(
-            API_URL,
-            {
+        const response =
 
-                method: "POST",
+            await fetch(
 
-                headers: {
+                APPWRITE_ENDPOINT
+                + "/functions/"
+                + FUNCTION_ID
+                + "/executions",
 
-                    "Content-Type":
-                        "text/plain"
+                {
 
-                },
+                    method:
+                        "POST",
 
-                body:
-                    JSON.stringify(payload)
+                    headers: {
 
-            }
-        );
+                        "Content-Type":
+                            "application/json"
 
-        showError(
-            "✅ Server responded: " +
-            response.status
-        );
+                    },
+
+                    body:
+
+                        JSON.stringify({
+
+                            body:
+                                JSON.stringify(payload),
+
+                            async:
+                                false
+
+                        })
+
+                }
+
+            );
+
 
         const text =
             await response.text();
 
-        let data;
+
+        console.log(
+            "Appwrite response:",
+            response.status,
+            text
+        );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+
+                "Appwrite returned "
+                + response.status
+                + ": "
+                + text
+
+            );
+
+        }
+
+
+        let execution;
+
 
         try {
 
-            data =
+            execution =
                 JSON.parse(text);
 
         } catch {
 
             throw new Error(
-                "Server returned invalid response: " +
-                text
+                "Invalid Appwrite response"
             );
 
         }
 
-        if (
-            !response.ok ||
-            !data.success
-        ) {
-
-            throw new Error(
-                data.error ||
-                data.message ||
-                "Registration failed"
-            );
-
-        }
 
         form.style.display =
             "none";
 
+
         $("success").style.display =
             "block";
 
+
         $("trainee-id").textContent =
-            data.data?.trainee_id ||
-            "REM-0000";
+            "Account processing...";
+
 
         let seconds = 3;
+
 
         $("countdown").textContent =
             seconds;
 
+
         const timer =
+
             setInterval(
+
                 function () {
 
                     seconds--;
 
-                    $("countdown").textContent =
+
+                    $("countdown")
+                        .textContent =
                         seconds;
 
-                    if (seconds <= 0) {
 
-                        clearInterval(timer);
+                    if (
+                        seconds <= 0
+                    ) {
+
+                        clearInterval(
+                            timer
+                        );
+
 
                         window.location.href =
                             "login.html";
@@ -344,8 +452,11 @@ form.onsubmit = async function (e) {
                     }
 
                 },
+
                 1000
+
             );
+
 
     } catch (err) {
 
@@ -354,13 +465,18 @@ form.onsubmit = async function (e) {
             err
         );
 
+
         showError(
-            "❌ CONNECTION ERROR: " +
-            err.message
+
+            "❌ CONNECTION ERROR: "
+            + err.message
+
         );
+
 
         submit.disabled =
             false;
+
 
         submit.textContent =
             "🚀 Create Account";
