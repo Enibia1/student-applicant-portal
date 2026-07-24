@@ -3,365 +3,561 @@ const API_URL =
 
 let method = "email";
 
-const $ = id => document.getElementById(id);
+const $ = id =>
+document.getElementById(id);
 
-const form = $("form");
-const error = $("error");
-const emailBox = $("email-box");
-const phoneBox = $("phone-box");
-const emailTab = $("email-tab");
-const phoneTab = $("phone-tab");
-const submit = $("submit");
+const form =
+$("form");
+
+const error =
+$("error");
+
+const emailBox =
+$("email-box");
+
+const phoneBox =
+$("phone-box");
+
+const emailTab =
+$("email-tab");
+
+const phoneTab =
+$("phone-tab");
+
+const submit =
+$("submit");
+
+// ===============================
+// ERROR HANDLING
+// ===============================
 
 function showError(message) {
-error.textContent = message;
-error.style.display = "block";
+
+error.textContent =
+    message;
+
+error.style.display =
+    "block";
+
 }
 
 function hideError() {
-error.textContent = "";
-error.style.display = "none";
-}
 
-function togglePassword(id) {
-const input = $(id);
+error.textContent =
+    "";
 
-input.type =
-    input.type === "password"
-        ? "text"
-        : "password";
+error.style.display =
+    "none";
 
 }
 
-window.togglePassword = togglePassword;
+// ===============================
+// PASSWORD VISIBILITY
+// ===============================
 
-// EMAIL / PHONE SWITCHING
+function togglePassword(id, button) {
 
-emailTab.onclick = () => {
+const input =
+    $(id);
 
-method = "email";
+if (input.type === "password") {
 
-emailBox.classList.remove("hidden");
-phoneBox.classList.add("hidden");
+    input.type =
+        "text";
 
-emailTab.classList.add("active");
-phoneTab.classList.remove("active");
-
-hideError();
-
-};
-
-phoneTab.onclick = () => {
-
-method = "phone";
-
-phoneBox.classList.remove("hidden");
-emailBox.classList.add("hidden");
-
-phoneTab.classList.add("active");
-emailTab.classList.remove("active");
-
-hideError();
-
-};
-
-// PASSWORD STRENGTH
-
-$("password").oninput = function () {
-
-const password = this.value;
-
-const checks = [
-    [password.length >= 8, "length"],
-    [/[a-z]/.test(password), "lower"],
-    [/[A-Z]/.test(password), "upper"],
-    [/\d/.test(password), "number"]
-];
-
-let score = 0;
-
-checks.forEach(([valid, id]) => {
-
-    const element = $(id);
-
-    element.textContent =
-        valid
-            ? "✅ " + element.textContent.slice(2)
-            : "🔴 " + element.textContent.slice(2);
-
-    element.className =
-        valid ? "met" : "";
-
-    if (valid) score++;
-
-});
-
-$("strength-bar").style.width =
-    `${score * 25}%`;
-
-const messages = [
-    "",
-    "🔴 Weak",
-    "🟡 Medium",
-    "🔵 Good",
-    "🟢 Strong"
-];
-
-$("strength-text").textContent =
-    messages[score];
-
-};
-
-// FORM SUBMISSION
-
-form.onsubmit = async event => {
-
-event.preventDefault();
-
-hideError();
-
-const email =
-    $("email").value.trim().toLowerCase();
-
-const phone =
-    $("phone").value.trim();
-
-const password =
-    $("password").value;
-
-const confirm =
-    $("confirm").value;
-
-
-// EMAIL VALIDATION
-
-if (method === "email") {
-
-    if (!email)
-        return showError(
-            "📧 Email is required"
-        );
-
-    if (
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/
-            .test(email)
-    )
-        return showError(
-            "📧 Invalid email address"
-        );
-
-}
-
-
-// PHONE VALIDATION
-
-else {
-
-    if (!phone)
-        return showError(
-            "📱 Phone number is required"
-        );
-
-}
-
-
-// PASSWORD VALIDATION
-
-if (password.length < 8)
-    return showError(
-        "🔑 Password must be at least 8 characters"
-    );
-
-if (!/[a-z]/.test(password))
-    return showError(
-        "🔑 Password needs a lowercase letter"
-    );
-
-if (!/[A-Z]/.test(password))
-    return showError(
-        "🔑 Password needs an uppercase letter"
-    );
-
-if (!/\d/.test(password))
-    return showError(
-        "🔑 Password needs a number"
-    );
-
-if (password !== confirm)
-    return showError(
-        "🔑 Passwords do not match"
-    );
-
-
-// LOADING
-
-submit.disabled = true;
-
-submit.textContent =
-    "⏳ Creating Account...";
-
-
-// PAYLOAD
-
-const payload = {
-    method: method,
-    password: password
-};
-
-if (method === "email") {
-
-    payload.email = email;
+    button.textContent =
+        "🙈";
 
 } else {
 
-    let cleanPhone =
-        phone.replace(/\D/g, "");
+    input.type =
+        "password";
 
-    if (cleanPhone.startsWith("0")) {
+    button.textContent =
+        "👁️";
 
-        cleanPhone =
-            "+234" +
-            cleanPhone.slice(1);
+}
 
-    } else if (
-        cleanPhone.startsWith("234")
-    ) {
+}
 
-        cleanPhone =
-            "+" +
-            cleanPhone;
+// ===============================
+// REGISTRATION METHOD
+// ===============================
+
+emailTab.onclick =
+() => {
+
+    method =
+        "email";
+
+    emailTab.classList.add(
+        "active"
+    );
+
+    phoneTab.classList.remove(
+        "active"
+    );
+
+    emailBox.style.display =
+        "block";
+
+    phoneBox.style.display =
+        "none";
+
+    $("email").required =
+        true;
+
+    $("phone").required =
+        false;
+
+    hideError();
+
+};
+
+phoneTab.onclick =
+() => {
+
+    method =
+        "phone";
+
+    phoneTab.classList.add(
+        "active"
+    );
+
+    emailTab.classList.remove(
+        "active"
+    );
+
+    emailBox.style.display =
+        "none";
+
+    phoneBox.style.display =
+        "block";
+
+    $("email").required =
+        false;
+
+    $("phone").required =
+        true;
+
+    hideError();
+
+};
+
+// ===============================
+// PASSWORD STRENGTH
+// ===============================
+
+$("password").oninput =
+function () {
+
+    const password =
+        this.value;
+
+    const strength =
+        $("strength");
+
+    const checks = {
+
+        length:
+            password.length >= 8,
+
+        lowercase:
+            /[a-z]/.test(password),
+
+        uppercase:
+            /[A-Z]/.test(password),
+
+        number:
+            /\d/.test(password)
+
+    };
+
+    const passed =
+        Object.values(checks)
+            .filter(Boolean)
+            .length;
+
+    if (passed === 4) {
+
+        strength.textContent =
+            "🟢 Strong";
+
+    } else if (passed >= 2) {
+
+        strength.textContent =
+            "🟡 Medium";
 
     } else {
 
-        cleanPhone =
-            "+234" +
+        strength.textContent =
+            "🔴 Weak";
+
+    }
+
+    $("length-check").textContent =
+        (checks.length ? "✅" : "🔴")
+        + " 8+ chars";
+
+    $("lower-check").textContent =
+        (checks.lowercase ? "✅" : "🔴")
+        + " Lowercase";
+
+    $("upper-check").textContent =
+        (checks.uppercase ? "✅" : "🔴")
+        + " Uppercase";
+
+    $("number-check").textContent =
+        (checks.number ? "✅" : "🔴")
+        + " Number";
+
+};
+
+// ===============================
+// FORM SUBMISSION
+// ===============================
+
+form.onsubmit =
+async function (e) {
+
+    e.preventDefault();
+
+    hideError();
+
+    const email =
+        $("email").value.trim();
+
+    const phone =
+        $("phone").value.trim();
+
+    const password =
+        $("password").value;
+
+    const confirm =
+        $("confirm").value;
+
+
+    // ===============================
+    // VALIDATION
+    // ===============================
+
+    if (method === "email") {
+
+        if (!email) {
+
+            return showError(
+                "📧 Please enter your email address"
+            );
+
+        }
+
+    } else {
+
+        if (!phone) {
+
+            return showError(
+                "📱 Please enter your phone number"
+            );
+
+        }
+
+    }
+
+
+    if (password.length < 8) {
+
+        return showError(
+            "🔑 Password must be at least 8 characters"
+        );
+
+    }
+
+
+    if (!/[a-z]/.test(password)) {
+
+        return showError(
+            "🔑 Password needs a lowercase letter"
+        );
+
+    }
+
+
+    if (!/[A-Z]/.test(password)) {
+
+        return showError(
+            "🔑 Password needs an uppercase letter"
+        );
+
+    }
+
+
+    if (!/\d/.test(password)) {
+
+        return showError(
+            "🔑 Password needs a number"
+        );
+
+    }
+
+
+    if (password !== confirm) {
+
+        return showError(
+            "🔑 Passwords do not match"
+        );
+
+    }
+
+
+    // ===============================
+    // LOADING
+    // ===============================
+
+    submit.disabled =
+        true;
+
+    submit.textContent =
+        "⏳ Creating Account...";
+
+
+    // ===============================
+    // PAYLOAD
+    // ===============================
+
+    const payload = {
+
+        method:
+            method,
+
+        password:
+            password
+
+    };
+
+
+    if (method === "email") {
+
+        payload.email =
+            email;
+
+    } else {
+
+        let cleanPhone =
+            phone.replace(
+                /\D/g,
+                ""
+            );
+
+
+        if (
+            cleanPhone.startsWith(
+                "0"
+            )
+        ) {
+
+            cleanPhone =
+                "+234" +
+                cleanPhone.slice(
+                    1
+                );
+
+        } else if (
+            cleanPhone.startsWith(
+                "234"
+            )
+        ) {
+
+            cleanPhone =
+                "+" +
+                cleanPhone;
+
+        } else {
+
+            cleanPhone =
+                "+234" +
+                cleanPhone;
+
+        }
+
+        payload.phone =
             cleanPhone;
 
     }
 
-    payload.phone = cleanPhone;
-}
 
-
-try {
-
-    const response =
-        await fetch(API_URL, {
-
-            method: "POST",
-
-            headers: {
-                "Content-Type":
-                    "text/plain"
-            },
-
-            body:
-                JSON.stringify(payload)
-
-        });
-
-
-    const text =
-        await response.text();
-
-    let data;
+    // ===============================
+    // API REQUEST
+    // ===============================
 
     try {
 
-        data =
-            JSON.parse(text);
+        const response =
+            await fetch(
+                API_URL,
+                {
 
-    } catch {
+                    method:
+                        "POST",
 
-        throw new Error(
-            "Server returned an invalid response"
+                    headers: {
+
+                        "Content-Type":
+                            "application/json"
+
+                    },
+
+                    body:
+                        JSON.stringify(
+                            payload
+                        )
+
+                }
+            );
+
+
+        const text =
+            await response.text();
+
+
+        let data;
+
+
+        try {
+
+            data =
+                JSON.parse(
+                    text
+                );
+
+        } catch {
+
+            throw new Error(
+                "Server returned an invalid response"
+            );
+
+        }
+
+
+        if (
+            !response.ok ||
+            !data.success
+        ) {
+
+            throw new Error(
+
+                data.error ||
+
+                data.message ||
+
+                "Registration failed"
+
+            );
+
+        }
+
+
+        // ===============================
+        // SUCCESS
+        // ===============================
+
+        form.style.display =
+            "none";
+
+
+        $("success").style.display =
+            "block";
+
+
+        $("trainee-id")
+            .textContent =
+
+            data.data?.trainee_id ||
+
+            "REM-0000";
+
+
+        let seconds =
+            3;
+
+
+        const timer =
+            setInterval(
+
+                () => {
+
+                    seconds--;
+
+
+                    $("countdown")
+                        .textContent =
+                        seconds;
+
+
+                    if (
+                        seconds <= 0
+                    ) {
+
+                        clearInterval(
+                            timer
+                        );
+
+
+                        location.href =
+                            "login.html";
+
+                    }
+
+                },
+
+                1000
+
+            );
+
+
+    } catch (err) {
+
+
+        console.error(
+
+            "Registration Error:",
+
+            err
+
         );
+
+
+        if (
+
+            err instanceof TypeError
+
+        ) {
+
+            showError(
+
+                "🌐 Failed to fetch. API connection failed."
+
+            );
+
+        } else {
+
+            showError(
+
+                "❌ " +
+
+                err.message
+
+            );
+
+        }
+
+
+        submit.disabled =
+            false;
+
+
+        submit.textContent =
+            "🚀 Create Account";
 
     }
-
-
-    if (
-        !response.ok ||
-        !data.success
-    ) {
-
-        throw new Error(
-            data.error ||
-            data.message ||
-            "Registration failed"
-        );
-
-    }
-
-
-    // SUCCESS
-
-    form.style.display =
-        "none";
-
-    $("success").style.display =
-        "block";
-
-    $("trainee-id").textContent =
-        data.data?.trainee_id ||
-        "REM-0000";
-
-
-    let seconds = 3;
-
-    const timer =
-        setInterval(() => {
-
-            seconds--;
-
-            $("countdown")
-                .textContent =
-                seconds;
-
-            if (seconds <= 0) {
-
-                clearInterval(timer);
-
-                location.href =
-                    "login.html";
-
-            }
-
-        }, 1000);
-
-
-} catch (err) {
-
-    console.error(
-        "Registration Error:",
-        err
-    );
-
-
-    if (
-        err instanceof TypeError
-    ) {
-
-        showError(
-            "🌐 Failed to fetch. API connection failed."
-        );
-
-    } else {
-
-        showError(
-            "❌ " +
-            err.message
-        );
-
-    }
-
-
-    submit.disabled =
-        false;
-
-    submit.textContent =
-        "🚀 Create Account";
-
-}
 
 };
