@@ -4,7 +4,7 @@ Student validation mobile form backend integration.
 
 A mobile-responsive frontend workspace built with Vanilla HTML5 and JavaScript. This interface serves as the entry point for student registrations across regional hubs, capturing core data payloads and securely transferring them to a centralized backend routing function.
 
----
+---Automatic deployment test
 
 ## 🏗️ Project Architecture
 
