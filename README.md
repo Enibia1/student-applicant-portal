@@ -2,7 +2,7 @@
 Student validation mobile form backend integration.
 # Student Applicant Portal
 
-A mobile-responsive frontend workspace built with Vanilla HTML5 and JavaScript. This interface serves as the entry point for student registrations across regional hubs, capturing core data payloads and securely transferring them to a centralized backend routing function.test
+A mobile-responsive frontend workspace built with Vanilla HTML5 and JavaScript. This interface serves as the entry point for student registrations across regional hubs, capturing core data payloads and securely transferring them to a centralized backend routing function.tester
 
 ---
 
